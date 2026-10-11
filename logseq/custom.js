@@ -326,3 +326,58 @@ window.notesFeatureEnabled = (key) => {
   schedule();
 })();
 
+/* Open Contents from page and journal headings. */
+(() => {
+  window.notesContentsShortcut?.abort();
+  const controller = new AbortController();
+  window.notesContentsShortcut = controller;
+  const { signal } = controller;
+  const headings = ".ls-page-title, .journal-title, .sidebar-item-header > button[aria-controls]";
+  const links = new Set();
+  let frame = null;
+  const refresh = () => {
+    frame = null;
+    observer.disconnect();
+    document.querySelectorAll(headings).forEach((heading) => {
+      const existing = heading.parentElement.querySelector(":scope > .notes-contents-shortcut");
+      const name = heading.getAttribute("data-ref") ||
+        heading.querySelector("[data-ref]")?.getAttribute("data-ref") || heading.textContent.trim();
+      if (name.toLowerCase() === "contents") {
+        existing?.remove();
+        return;
+      }
+      if (existing) return;
+      const link = document.createElement("a");
+      link.className = "notes-contents-shortcut";
+      link.href = "#/page/contents";
+      link.title = "Open Contents";
+      link.setAttribute("aria-label", "Open Contents");
+      link.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg><span>Contents</span>';
+      for (const type of ["pointerdown", "mousedown", "click"])
+        link.addEventListener(type, (event) => event.stopPropagation(), { signal });
+      heading.insertAdjacentElement("afterend", link);
+      links.add(link);
+    });
+    for (const link of links) if (!link.isConnected) links.delete(link);
+    if (!signal.aborted) observer.observe(document.body, {
+      childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ["data-ref"],
+    });
+  };
+  const observer = new MutationObserver((changes) => {
+    if (changes.some((change) =>
+      (change.target.nodeType === Node.ELEMENT_NODE ? change.target : change.target.parentElement)
+        ?.closest(headings) || [...change.addedNodes].some((node) =>
+      node.nodeType === Node.ELEMENT_NODE &&
+      (node.matches(headings) || node.querySelector(headings)))) && frame === null)
+      frame = requestAnimationFrame(refresh);
+  });
+  signal.addEventListener("abort", () => {
+    observer.disconnect();
+    if (frame !== null) cancelAnimationFrame(frame);
+    links.forEach((link) => link.remove());
+    links.clear();
+  }, { once: true });
+  refresh();
+})();
+

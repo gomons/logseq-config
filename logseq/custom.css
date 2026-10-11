@@ -62,3 +62,36 @@ div.flex-1.page.relative > :is(
   background: var(--ls-secondary-background-color);
 }
 
+/* Share geometry so Contents and Edit/View align with the page heading. */
+:is(.notes-contents-shortcut, .notes-read-mode-toggle) {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-self: baseline;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.25rem 0.45rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--ls-secondary-text-color);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+:is(.notes-contents-shortcut, .notes-read-mode-toggle) svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transform: translateY(-2px);
+}
+:has(> .notes-contents-shortcut, > .notes-read-mode-toggle) {
+  align-items: baseline;
+}
+:is(.ls-page-title, .journal-title) + :is(.notes-contents-shortcut, .notes-read-mode-toggle) {
+  margin-left: auto;
+}
+
