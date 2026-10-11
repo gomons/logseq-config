@@ -95,3 +95,44 @@ div.flex-1.page.relative > :is(
   margin-left: auto;
 }
 
+/* Preserve the native full title for Logseq while displaying its leaf name. */
+.notes-has-namespace-title .title[data-ref] {
+  display: none !important;
+}
+.notes-namespace-title {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.notes-namespace-current {
+  overflow-wrap: anywhere;
+}
+
+/* Show clickable parent namespaces on the left of the toolbar. */
+.notes-header-path {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+  margin: 0 1rem;
+  font-size: 0.85rem;
+  color: var(--ls-secondary-text-color);
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+.notes-header-path-segment {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+}
+.notes-header-path-separator {
+  flex-shrink: 0;
+}
+.notes-header-path-parent {
+  flex-shrink: 0;
+  max-width: 35%;
+}
+

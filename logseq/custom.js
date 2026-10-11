@@ -381,3 +381,102 @@ window.notesFeatureEnabled = (key) => {
   refresh();
 })();
 
+/* Show leaf page titles and clickable parent namespaces in the toolbar. */
+(() => {
+  window.notesPageHeadings?.abort();
+  const controller = new AbortController();
+  window.notesPageHeadings = controller;
+  const { signal } = controller;
+  const selector = ".ls-page-title h1";
+  let frame = null;
+  const render = () => {
+    frame = null;
+    observer.disconnect();
+    document.querySelectorAll(selector).forEach((heading) => {
+      const original = heading.querySelector(".title[data-ref]");
+      const previous = heading.querySelector(".notes-namespace-title");
+      const path = original?.getAttribute("data-ref") || "";
+      const label = original?.textContent.trim() || "";
+      const signature = JSON.stringify([path, label]);
+      if (!original || !path.includes("/") || heading.querySelector("input, textarea")) {
+        previous?.remove();
+        heading.classList.remove("notes-has-namespace-title");
+        return;
+      }
+      if (previous?.dataset.signature === signature) return;
+      previous?.remove();
+      const title = document.createElement("span");
+      title.className = "notes-namespace-title";
+      title.dataset.signature = signature;
+      const parts = path.split("/");
+      const labels = label.split("/");
+      const names = labels.length === parts.length ? labels : parts;
+      const leaf = document.createElement("span");
+      leaf.className = "notes-namespace-current";
+      leaf.textContent = names.at(-1);
+      leaf.title = "Rename page";
+      title.append(leaf);
+      original.insertAdjacentElement("afterend", title);
+      heading.classList.add("notes-has-namespace-title");
+    });
+    updateHeaderPath();
+    if (!signal.aborted) observer.observe(document.body, {
+      childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ["data-ref"],
+    });
+  };
+  const updateHeaderPath = () => {
+    const toolbar = document.querySelector("#head");
+    const source = document.querySelector("#main-content-container .ls-page-title .title[data-ref]");
+    const path = source?.getAttribute("data-ref") || "";
+    const old = document.querySelector(".notes-header-path");
+    if (!toolbar || !path.includes("/")) {
+      old?.remove();
+      return;
+    }
+    const label = source.textContent.trim();
+    const signature = JSON.stringify([path, label]);
+    if (old?.dataset.signature === signature && old.parentElement === toolbar) return;
+    old?.remove();
+    const parts = path.split("/").slice(0, -1);
+    const labels = label.split("/");
+    const names = labels.length === parts.length + 1 ? labels.slice(0, -1) : parts;
+    const breadcrumb = document.createElement("nav");
+    breadcrumb.className = "notes-header-path";
+    breadcrumb.dataset.signature = signature;
+    breadcrumb.setAttribute("aria-label", "Parent pages");
+    parts.forEach((part, index) => {
+      if (index) {
+        const separator = document.createElement("span");
+        separator.className = "notes-header-path-separator";
+        separator.textContent = "/";
+        separator.setAttribute("aria-hidden", "true");
+        breadcrumb.append(separator);
+      }
+      const link = document.createElement("a");
+      link.className = "notes-header-path-segment";
+      if (index === parts.length - 1) link.classList.add("notes-header-path-parent");
+      link.textContent = names[index];
+      link.href = "#/page/" + encodeURIComponent(parts.slice(0, index + 1).join("/"));
+      link.title = names.slice(0, index + 1).join(" / ");
+      breadcrumb.append(link);
+    });
+    toolbar.insertBefore(breadcrumb, toolbar.querySelector(":scope > .r"));
+  };
+  const observer = new MutationObserver((changes) => {
+    if (changes.some((change) => {
+      const target = change.target.nodeType === Node.ELEMENT_NODE ? change.target : change.target.parentElement;
+      return target?.closest(selector) || [...change.addedNodes, ...change.removedNodes].some((node) =>
+        node.nodeType === Node.ELEMENT_NODE && (node.matches(selector + ", #head") || node.querySelector(selector + ", #head")));
+    }) && frame === null) frame = requestAnimationFrame(render);
+  });
+  signal.addEventListener("abort", () => {
+    observer.disconnect();
+    if (frame !== null) cancelAnimationFrame(frame);
+    document.querySelector(".notes-header-path")?.remove();
+    document.querySelectorAll(".notes-namespace-title").forEach((title) => title.remove());
+    document.querySelectorAll(".notes-has-namespace-title").forEach((heading) =>
+      heading.classList.remove("notes-has-namespace-title"));
+  }, { once: true });
+  render();
+})();
