@@ -25,13 +25,13 @@ window.notesFeatureEnabled = (key) => {
   refresh();
 })();
 
-/* Page navigation: direct subpages, leaf labels, counts and inline search. */
+/* Page navigation and reference search. */
 (() => {
   window.notesPageNavigation?.abort();
   const controller = new AbortController();
   window.notesPageNavigation = controller;
   const { signal } = controller;
-  const panelSelector = ".page-hierarchy, .references.page-tags";
+  const panelSelector = ".page-hierarchy, .references.page-tags, .references.page-linked";
   const titleSelector = ".ls-page-title .title[data-ref], .ls-page-title[data-ref]";
   const pendingPanels = new Set();
   const searchFields = new Set();
@@ -69,6 +69,14 @@ window.notesFeatureEnabled = (key) => {
   const filterRows = (panel) => {
     const input = panel.querySelector(".notes-page-list-filter");
     if (!input) return;
+    if (panel.matches(".references.page-linked")) {
+      // Native filters determine which blocks are rendered, including folded groups.
+      panel.querySelectorAll(".references-blocks-item").forEach((group) => {
+        group.classList.toggle("notes-page-filter-hidden",
+          !matchesSearch(group.textContent, input.value));
+      });
+      return;
+    }
     panel.querySelectorAll(".notes-navigation-row").forEach((row) => {
       const link = row.querySelector(".notes-navigation-link");
       if (!link) return;
@@ -140,6 +148,11 @@ window.notesFeatureEnabled = (key) => {
   };
 
   const updatePanel = (panel) => {
+    if (panel.matches(".references.page-linked")) {
+      addSearch(panel, "Linked References");
+      filterRows(panel);
+      return;
+    }
     const hierarchy = panel.matches(".page-hierarchy");
     const list = panel.querySelector(hierarchy ? "ul.namespaces" : "ul");
     if (!list) return;

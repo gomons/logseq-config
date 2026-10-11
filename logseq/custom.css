@@ -50,6 +50,11 @@ div.flex-1.page.relative > :is(
   background: var(--ls-primary-background-color);
   color: var(--ls-primary-text-color);
 }
+/* Follow the native result panel's fold state without clearing the query. */
+:is(.page-hierarchy, .references.page-tags, .references.page-linked)
+  :has(> .foldable-title):has(+ .hidden) > .notes-page-list-filter {
+  display: none;
+}
 .notes-navigation-list {
   margin: 0.75rem 0 0 !important;
   padding: 1rem 1rem 1rem 2rem;
