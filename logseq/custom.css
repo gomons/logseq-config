@@ -137,6 +137,32 @@ div.flex-1.page.relative > :is(
   max-width: 35%;
 }
 
+/* Reserve control widths so the breadcrumb receives the remaining space. */
+#head:has(> .notes-header-path) > .r {
+  flex: 0 0 auto;
+}
+@media (max-width: 640px) {
+  #head:has(> .notes-header-path) > .l {
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+  .notes-header-path {
+    margin: 0 0.35rem;
+    overflow: hidden;
+  }
+  .notes-header-path > :not(.notes-header-path-parent) {
+    display: none;
+  }
+  .notes-header-path:has(> a:nth-of-type(2))::before {
+    content: "… /";
+    flex-shrink: 0;
+  }
+  .notes-header-path-parent {
+    flex-shrink: 1;
+    max-width: 100%;
+  }
+}
+
 /* Separate property blocks from the surrounding sidebar card. */
 .sidebar-item :is(.block-properties, .page-properties) {
   background-color: var(--ls-primary-background-color);
