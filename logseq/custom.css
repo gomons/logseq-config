@@ -346,7 +346,8 @@ div.flex-1.page.relative > :is(
 .notes-subtree-search {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
   width: 100%;
   margin: 0.4rem 0 0.65rem;
   clear: both;
@@ -362,6 +363,36 @@ div.flex-1.page.relative > :is(
   color: var(--ls-primary-text-color);
   box-sizing: border-box;
   min-width: 0;
+}
+.notes-checklist-filters {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  padding: 0.15rem;
+  border-radius: 0.5rem;
+  background: var(--ls-secondary-background-color);
+}
+.notes-checklist-filters button {
+  min-height: 36px;
+  padding: 0.3rem 0.65rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--ls-secondary-text-color);
+  font-size: 0.8rem;
+  line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.notes-checklist-filters button[aria-pressed="true"] {
+  background: var(--ls-primary-background-color);
+  color: var(--ls-primary-text-color);
+  box-shadow: 0 1px 3px #0002;
+}
+.notes-checklist-filters button:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 1px;
 }
 
 /* Native query view: tagged roots followed by their namespace descendants. */

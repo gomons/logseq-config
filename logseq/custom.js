@@ -976,7 +976,7 @@ window.notesFeatureEnabled = (key) => {
   void refresh().catch((error) => console.warn("Reading mode:", error));
 })();
 
-/* Opt-in subtree search: searchable:: true on any parent block. */
+/* Independent subtree text search and CHECK/CHECKED filtering. */
 window.notesSubtreeSearch?.abort();
 window.notesSubtreeSearch = new AbortController();
 (() => {
@@ -992,20 +992,31 @@ window.notesSubtreeSearch = new AbortController();
       .toLocaleLowerCase()
       .replace(/ё/g, "е");
   const uuidOf = (node) => node.getAttribute("blockid");
+  const nodesOf = (state) => [...state.scope.querySelectorAll(".ls-block")].filter((node) =>
+    node !== state.host && !node.closest(".custom-query, .references") &&
+    (!state.pageName || node.closest(".page, .journal-item, .sidebar-item") === state.scope));
   const restore = (state) => {
     for (const [uuid, collapsed] of state.opened)
       api()?.set_block_collapsed(uuid, collapsed);
     state.opened.clear();
     clearTimeout(state.timer);
-    state.host
-      .querySelectorAll(".notes-subtree-hidden")
-      .forEach((n) => n.classList.remove("notes-subtree-hidden"));
+    nodesOf(state).forEach((node) => node.classList.remove("notes-subtree-hidden"));
+  };
+  const isActive = (state) => !!state.input.value || state.filterValue !== "all";
+  const removeState = (state) => {
+    state.version++;
+    restore(state);
+    state.panel.remove();
+    states.delete(state.host);
+  };
+  const scheduleSearch = (state, delay) => {
+    clearTimeout(state.timer);
+    state.timer = setTimeout(() => void search(state), delay);
   };
   const apply = () => {
     const hidden = new Map();
     for (const state of states.values()) {
-      for (const node of state.host.querySelectorAll(".ls-block")) {
-        if (node.closest(".custom-query")) continue;
+      for (const node of nodesOf(state)) {
         hidden.set(node, hidden.get(node) ||
           (!!state.keep && !state.keep.has(uuidOf(node))));
       }
@@ -1019,7 +1030,8 @@ window.notesSubtreeSearch = new AbortController();
       .trim()
       .split(/\s+/)
       .filter(Boolean);
-    if (!terms.length) {
+    const filter = state.filterValue;
+    if (!terms.length && filter === "all") {
       state.keep = null;
       restore(state);
       state.status.textContent = "";
@@ -1027,7 +1039,10 @@ window.notesSubtreeSearch = new AbortController();
       return;
     }
     try {
-      const tree = await api().get_block(state.uuid, { includeChildren: true });
+      const tree = state.pageName
+        ? { children: ((await api().get_page_blocks_tree(state.pageName)) || [])
+            .filter((block) => block.uuid !== state.uuid) }
+        : await api().get_block(state.uuid, { includeChildren: true });
       if (
         signal.aborted ||
         version !== state.version ||
@@ -1042,7 +1057,10 @@ window.notesSubtreeSearch = new AbortController();
           /^\s*[\w-]+::.*$/gm,
           "",
         );
-        const match = terms.every((term) => normalize(content).includes(term));
+        const marker = content.trimStart().match(/^(CHECKED|CHECKING|CHECK)(?=\s|$)/)?.[1];
+        const statusMatch = filter === "all" ||
+          (filter === "checked" ? marker === "CHECKED" : marker === "CHECK" || marker === "CHECKING");
+        const match = statusMatch && terms.every((term) => normalize(content).includes(term));
         if (match) {
           count++;
           parents.forEach((parent) => {
@@ -1052,10 +1070,10 @@ window.notesSubtreeSearch = new AbortController();
         }
         if (match || inherited) keep.add(node.uuid);
         for (const child of node.children || [])
-          visit(child, [...parents, node], inherited || match);
+          visit(child, [...parents, node], filter === "all" && (inherited || match));
       };
       if (!tree) throw new Error("Search root is unavailable");
-      for (const child of tree.children || []) visit(child, [tree], false);
+      for (const child of tree.children || []) visit(child, state.pageName ? [] : [tree], false);
       state.keep = keep;
       // Open only paths to hits. Remember the original fold state for clearing.
       for (const [uuid, node] of expand) {
@@ -1069,7 +1087,7 @@ window.notesSubtreeSearch = new AbortController();
         }
       }
       state.status.textContent = count ? `${count} found` : "No matches";
-      apply(state);
+      apply();
     } catch (error) {
       if (signal.aborted || version !== state.version) return;
       state.status.textContent = "Search unavailable";
@@ -1080,30 +1098,38 @@ window.notesSubtreeSearch = new AbortController();
     if (!api()) return;
     for (const [host, state] of states) {
       if (!host.isConnected) {
-        state.version++;
-        restore(state);
-        states.delete(host);
+        removeState(state);
       }
     }
     try {
       const rows = await api().datascript_query(
-        "[:find (pull ?b [:block/uuid]) ?enabled :where [?b :block/properties ?props] [(get ?props :searchable) ?enabled]]",
+        "[:find (pull ?b [:block/uuid :block/properties :block/pre-block? {:block/page [:block/name]}]) :where [?b :block/properties ?props] (or [(get ?props :searchable)] [(get ?props :checklist)])]",
       );
       if (signal.aborted) return;
-      const enabled = new Set(
-        (rows || [])
-          .filter((row) => row[1] === true || row[1] === "true")
-          .map((row) => row[0]["block/uuid"] || row[0].uuid),
-      );
+      const enabled = new Map();
+      const isTrue = (value) => value === true || value === "true";
+      for (const [block] of rows || []) {
+        const properties = block.properties || block["block/properties"] || {};
+        const preBlock = block.preBlock ?? block["pre-block?"] ?? block["block/pre-block?"];
+        const page = block.page || block["block/page"];
+        const options = { search: isTrue(properties.searchable), checklist: isTrue(properties.checklist),
+          pageName: preBlock ? page?.name || page?.["block/name"] : null };
+        if (options.search || options.checklist)
+          enabled.set(block.uuid || block["block/uuid"], options);
+      }
       for (const host of document.querySelectorAll(".ls-block[blockid]")) {
         const uuid = uuidOf(host);
         if (!enabled.has(uuid) || host.closest(".custom-query, .references"))
           continue;
-        if (states.has(host) && states.get(host).panel.isConnected) continue;
-        if (states.has(host)) {
-          restore(states.get(host));
-          states.delete(host);
-        }
+        const options = enabled.get(uuid);
+        const scope = options.pageName ? host.closest(".page, .journal-item, .sidebar-item") : host;
+        if (!scope) continue;
+        const existing = states.get(host);
+        if (existing?.panel.isConnected &&
+            existing.options.search === options.search && existing.options.checklist === options.checklist &&
+            existing.scope === scope && existing.pageName === options.pageName)
+          continue;
+        if (existing) removeState(existing);
         const content = [...host.querySelectorAll(".block-content")].find(
           (n) => n.closest(".ls-block") === host,
         );
@@ -1113,15 +1139,33 @@ window.notesSubtreeSearch = new AbortController();
         const input = document.createElement("input");
         input.type = "search";
         input.placeholder = "Search";
-        input.setAttribute("aria-label", "Search nested blocks");
+        input.setAttribute("aria-label", options.pageName ? "Search page blocks" : "Search nested blocks");
         const status = document.createElement("span");
         status.setAttribute("aria-live", "polite");
-        panel.append(input, status);
+        const filter = document.createElement("div");
+        filter.className = "notes-checklist-filters";
+        filter.setAttribute("role", "group");
+        filter.setAttribute("aria-label", "Filter checklist status");
+        for (const [value, label] of [["all", "All"], ["unchecked", "Unchecked"], ["checked", "Checked"]]) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.dataset.filter = value;
+          button.textContent = label;
+          button.setAttribute("aria-pressed", String(value === "all"));
+          filter.append(button);
+        }
+        if (options.search) panel.append(input);
+        if (options.checklist) panel.append(filter);
+        panel.append(status);
         content.append(panel);
         const state = {
           host,
+          scope,
+          pageName: options.pageName,
           uuid,
           input,
+          filterValue: "all",
+          options,
           status,
           panel,
           opened: new Map(),
@@ -1135,30 +1179,37 @@ window.notesSubtreeSearch = new AbortController();
           "keydown",
           "keyup",
           "pointerdown",
+          "pointerup",
+          "mouseup",
+          "touchstart",
+          "touchend",
         ])
           panel.addEventListener(event, (e) => e.stopPropagation(), { signal });
         input.addEventListener(
           "input",
-          () => {
-            clearTimeout(state.timer);
-            state.timer = setTimeout(() => search(state), 120);
-          },
+          () => scheduleSearch(state, 120),
           { signal },
         );
-        host.addEventListener(
+        filter.addEventListener("click", (event) => {
+          const button = event.target.closest("button[data-filter]");
+          if (!button || state.filterValue === button.dataset.filter) return;
+          state.filterValue = button.dataset.filter;
+          filter.querySelectorAll("button").forEach((item) =>
+            item.setAttribute("aria-pressed", String(item === button)));
+          void search(state);
+        }, { signal });
+        scope.addEventListener(
           "change",
           (e) => {
-            if (e.target.matches('input[type="checkbox"]') && input.value)
-              { clearTimeout(state.timer); state.timer = setTimeout(() => search(state), 100); }
+            if (e.target.matches('input[type="checkbox"]') && isActive(state))
+              scheduleSearch(state, 100);
           },
           { signal },
         );
       }
       for (const [host, state] of states) {
         if (!enabled.has(state.uuid)) {
-          restore(state);
-          state.panel.remove();
-          states.delete(host);
+          removeState(state);
         }
       }
     } catch (error) {
@@ -1172,7 +1223,13 @@ window.notesSubtreeSearch = new AbortController();
     mounting = true;
     try {
       await mount();
-      if (!signal.aborted) apply();
+      if (!signal.aborted) {
+        for (const state of states.values()) {
+          if (isActive(state))
+            await search(state);
+        }
+        apply();
+      }
     } finally {
       mounting = false;
       if (mountAgain && !signal.aborted) { mountAgain = false; schedule(); }
@@ -1200,10 +1257,7 @@ window.notesSubtreeSearch = new AbortController();
   signal.addEventListener("abort", () => {
     clearTimeout(mountTimer);
     observer.disconnect();
-    for (const s of states.values()) {
-      restore(s);
-      s.panel.remove();
-    }
+    for (const state of states.values()) removeState(state);
   });
   window.addEventListener(
     "beforeunload",
