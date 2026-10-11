@@ -1269,6 +1269,222 @@ window.notesSubtreeSearch = new AbortController();
   refresh();
 })();
 
+/* Opt-in Contents: auto-contents:: true and auto-tags:: true on any block. */
+(() => {
+  window.notesAutomaticContents?.abort();
+  const controller = new AbortController();
+  window.notesAutomaticContents = controller;
+  const { signal } = controller;
+  const states = new Map();
+  let timer = null;
+  let running = false;
+  let rerun = false;
+  const query = `[:find (pull ?page [:block/name :block/original-name :block/properties
+                    {:block/namespace [:block/name]} {:block/tags [:block/name]}])
+                  :where [?page :block/name]]`;
+  const field = (entity, key) => entity?.[key] ?? entity?.[`block/${key}`];
+  const enabled = (value) => value === true || String(value).toLowerCase() === "true";
+  const option = (block, key) => {
+    const value = field(block, "content")?.match(
+      new RegExp(`^${key}::[ \t]*(true|false)[ \t]*$`, "im"),
+    )?.[1] ?? field(block, "properties")?.[key];
+    return enabled(value);
+  };
+  const tagQuery = `[:find (pull ?block [:block/content
+                          {:block/refs [:block/name :block/original-name]}])
+                    :where [?block :block/content ?content]
+                    [?block :block/refs ?page] [?page :block/name]
+                    [(re-pattern "#") ?hashtag] [(re-find ?hashtag ?content)]]`;
+  const countTags = (rows) => {
+    const counts = new Map();
+    for (const [block] of rows || []) {
+      const refs = new Map((field(block, "refs") || []).map((page) => [field(page, "name"), page]));
+      const content = String(field(block, "content") || "").replace(/^\s*[\w-]+::.*$/gm, "");
+      const names = new Set([...content.matchAll(/(?:^|[\s(,;])#(?:\[\[([^\]]+)\]\]|([^\s#\[\](),;!?]+))/g)]
+        .map((match) => (match[1] || match[2]).toLowerCase()));
+      for (const name of names) {
+        const page = refs.get(name);
+        if (!page) continue;
+        const tag = counts.get(name) || { name, label: field(page, "original-name") || name, count: 0 };
+        tag.count++;
+        counts.set(name, tag);
+      }
+    }
+    return [...counts.values()].sort((a, b) => a.name.localeCompare(b.name));
+  };
+  const renderTags = (tags) => {
+    const cloud = document.createElement("div");
+    cloud.className = "notes-tag-cloud";
+    const maximum = Math.max(1, ...tags.map((tag) => tag.count));
+    for (const tag of tags) {
+      const link = document.createElement("a");
+      link.setAttribute("href", `#/page/${encodeURIComponent(tag.name)}`);
+      link.textContent = tag.label;
+      link.title = `${tag.label} · ${tag.count} blocks`;
+      link.style.fontSize = `${0.85 + 0.55 * tag.count / maximum}rem`;
+      cloud.append(link);
+    }
+    if (!tags.length) cloud.textContent = "No tags yet";
+    return cloud;
+  };
+  const blockQuery = `[:find (pull ?block [:block/uuid :block/content :block/properties])
+                      :where [?block :block/properties ?props]
+                      (or [(get ?props :auto-contents)] [(get ?props :auto-tags)])]`;
+  const remove = (anchor) => {
+    states.get(anchor)?.section.remove();
+    states.delete(anchor);
+  };
+  const renderTree = (pages, previous) => {
+    const children = new Map();
+    const roots = [];
+    for (const page of pages) {
+      if (page.tags.includes("contents")) roots.push(page);
+      if (!children.has(page.parent)) children.set(page.parent, []);
+      children.get(page.parent).push(page);
+    }
+    const open = new Map([...previous?.querySelectorAll("details") || []]
+      .map((details) => [details.dataset.page, details.open]));
+    const branch = (page, root, ancestors = new Set()) => {
+      const row = document.createElement("li");
+      const link = document.createElement("a");
+      link.setAttribute("href", `#/page/${encodeURIComponent(page.name)}`);
+      link.title = page.label;
+      link.textContent = page.label.split("/").at(-1);
+      const descendants = (children.get(page.name) || [])
+        .filter((child) => !ancestors.has(child.name));
+      if (descendants.length) {
+        const details = document.createElement("details");
+        details.dataset.page = page.name;
+        details.open = open.get(page.name) ?? root;
+        const summary = document.createElement("summary");
+        summary.append(link);
+        const list = document.createElement("ul");
+        const path = new Set([...ancestors, page.name]);
+        descendants.forEach((child) => list.append(branch(child, false, path)));
+        details.append(summary, list);
+        row.append(details);
+      } else row.append(link);
+      return row;
+    };
+    const tree = document.createElement("ul");
+    tree.className = "notes-contents-tree";
+    roots.forEach((page) => tree.append(branch(page, true)));
+    return tree;
+  };
+  const refresh = async () => {
+    timer = null;
+    if (signal.aborted) return;
+    if (running) { rerun = true; return; }
+    const api = window.logseq?.api;
+    if (!api?.datascript_query) return;
+    running = true;
+    try {
+      const rows = await api.datascript_query(query);
+      if (signal.aborted) return;
+      const pages = (rows || []).map(([page]) => ({
+        name: field(page, "name"),
+        label: field(page, "original-name") || field(page, "name"),
+        parent: field(field(page, "namespace"), "name"),
+        tags: (field(page, "tags") || []).map((tag) => field(tag, "name")),
+        properties: field(page, "properties") || {},
+      })).sort((a, b) => a.name.localeCompare(b.name));
+      const blockRows = await api.datascript_query(blockQuery);
+      const candidates = (blockRows || []).map(([block]) => ({
+        uuid: field(block, "uuid"),
+        options: { pages: option(block, "auto-contents"), tags: option(block, "auto-tags") },
+      })).filter(({ options }) => options.pages || options.tags);
+      const tags = candidates.some(({ options }) => options.tags)
+        ? countTags(await api.datascript_query(tagQuery)) : [];
+      if (signal.aborted) return;
+      const treeSignature = JSON.stringify(pages.map(({ properties, ...page }) => page));
+      const tagSignature = JSON.stringify(tags);
+      const active = new Set();
+      for (const { uuid, options } of candidates) {
+        for (const anchor of document.querySelectorAll(".ls-block[blockid]")) {
+          if (anchor.getAttribute("blockid") !== uuid || anchor.closest(".references, .custom-query")) continue;
+          const content = [...anchor.querySelectorAll(".block-content")]
+            .find((element) => element.closest(".ls-block") === anchor);
+          if (!content) continue;
+          active.add(anchor);
+          let state = states.get(anchor);
+          if (!state?.section.isConnected || state.section.parentElement !== content) {
+            remove(anchor);
+            const section = document.createElement("section");
+            section.className = "notes-automatic-contents";
+            section.setAttribute("aria-label", "Contents");
+            content.append(section);
+            for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup",
+              "touchstart", "touchend", "click", "keydown", "keyup"])
+              section.addEventListener(type, (event) => event.stopPropagation(), { signal });
+            state = { section, groups: new Map() };
+            states.set(anchor, state);
+          }
+          for (const [key, label, signature] of [
+            ["pages", "Pages", treeSignature], ["tags", "Tags", tagSignature],
+          ]) {
+            let group = state.groups.get(key);
+            if (!options[key]) {
+              group?.element.remove();
+              state.groups.delete(key);
+              continue;
+            }
+            if (!group) {
+              const element = document.createElement("section");
+              element.className = "notes-automatic-group";
+              const heading = document.createElement("h3");
+              heading.textContent = label;
+              element.append(heading);
+              group = { element, signature: null };
+              state.groups.set(key, group);
+            }
+            // Keep Pages before Tags even when either property changes.
+            const position = key === "pages" ? state.section.firstElementChild : null;
+            if (group.element.parentElement !== state.section)
+              state.section.insertBefore(group.element, position);
+            if (group.signature === signature) continue;
+            const old = group.element.querySelector(".notes-contents-tree, .notes-tag-cloud");
+            const body = key === "pages" ? renderTree(pages, old) : renderTags(tags);
+            if (old) old.replaceWith(body);
+            else group.element.append(body);
+            group.signature = signature;
+          }
+        }
+      }
+      for (const anchor of states.keys()) if (!active.has(anchor)) remove(anchor);
+    } catch (error) {
+      console.warn("Automatic Contents:", error);
+    } finally {
+      running = false;
+      if (rerun && !signal.aborted) { rerun = false; schedule(); }
+    }
+  };
+  const schedule = () => {
+    if (signal.aborted) return;
+    clearTimeout(timer);
+    timer = setTimeout(refresh, 150);
+  };
+  const observer = new MutationObserver((changes) => {
+    if (changes.some(({ target, addedNodes, removedNodes }) => {
+      const element = target.nodeType === 1 ? target : target.parentElement;
+      if (element?.closest(".notes-automatic-contents")) return false;
+      return element?.closest(".block-properties") ||
+        [...addedNodes, ...removedNodes].some((node) => node.nodeType === 1 &&
+          (node.matches(".ls-block, .page, .sidebar-item") || node.querySelector(".ls-block")));
+    })) schedule();
+  });
+  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  // Also pick up graph/index changes that have no visible DOM mutation.
+  const interval = setInterval(schedule, 3000);
+  window.addEventListener("hashchange", schedule, { signal });
+  signal.addEventListener("abort", () => {
+    observer.disconnect();
+    clearTimeout(timer);
+    clearInterval(interval);
+    for (const anchor of states.keys()) remove(anchor);
+  }, { once: true });
+  void refresh();
+})();
+
 /* Search native query trees and catalogs without changing their query results. */
 (() => {
   window.notesContentsSearch?.abort();

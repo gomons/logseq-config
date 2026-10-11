@@ -395,7 +395,7 @@ div.flex-1.page.relative > :is(
   outline-offset: 1px;
 }
 
-/* Native query view: tagged roots followed by their namespace descendants. */
+/* Contents: tagged roots followed by their namespace descendants. */
 .notes-contents-tree,
 .notes-contents-tree ul {
   list-style: none;
@@ -603,4 +603,24 @@ div.flex-1.page.relative > :is(
 .notes-catalog-muted,
 .notes-catalog-label {
   color: var(--ls-secondary-text-color);
+}
+
+.notes-automatic-contents {
+  width: 100%;
+  flex-basis: 100%;
+  clear: both;
+  margin: 1rem 0;
+}
+.notes-automatic-group > h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.notes-automatic-group > .notes-contents-tree {
+  margin-left: -1.25rem;
+}
+
+.notes-automatic-group + .notes-automatic-group {
+  margin-top: 1.5rem;
 }
