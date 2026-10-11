@@ -424,7 +424,7 @@ div.flex-1.page.relative > :is(
   overflow-wrap: anywhere;
 }
 
-/* Optional search for native query trees marked with notes-contents-tree. */
+/* Shared search control for native query trees and catalogs. */
 .notes-contents-search {
   margin-bottom: 0.75rem;
 }
@@ -447,4 +447,59 @@ div.flex-1.page.relative > :is(
 .notes-contents-search-results > li {
   margin: 0.35rem 0;
   overflow-wrap: anywhere;
+}
+
+/* Shared query catalog; field selection and visibility belong to the query. */
+.notes-catalog {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.notes-catalog > .notes-catalog-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.6rem;
+  row-gap: 0.2rem;
+  margin: 0;
+  padding: 0.8rem 0;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+.notes-catalog > .notes-catalog-item + .notes-catalog-item {
+  border-top: 1px solid var(--ls-border-color);
+}
+.notes-catalog-field {
+  min-width: 0;
+  flex-basis: 100%;
+  font-size: 0.85em;
+}
+.notes-catalog-field[hidden] {
+  display: none !important;
+}
+.notes-catalog > .notes-catalog-search-hidden {
+  display: none !important;
+}
+.notes-catalog-title {
+  margin-bottom: 0.55rem;
+  font-size: 1em;
+  font-weight: 500;
+}
+.notes-catalog-title:has(~ [data-field="page-alias"]:not([hidden])) {
+  margin-bottom: 0;
+}
+.notes-catalog-field[data-field="page-alias"] {
+  margin-top: -0.35rem;
+  margin-bottom: 0.55rem;
+}
+.notes-catalog-field:not([hidden]):not([data-field="page-title"]):not([data-field="page-alias"])
+  ~ .notes-catalog-field:not([hidden]):not([data-field="page-title"]):not([data-field="page-alias"]) {
+  margin-top: -0.35rem;
+}
+.notes-catalog-muted {
+  font-size: 0.8em;
+}
+.notes-catalog-muted,
+.notes-catalog-label {
+  color: var(--ls-secondary-text-color);
 }

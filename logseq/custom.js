@@ -1091,23 +1091,42 @@ window.notesSubtreeSearch = new AbortController();
   refresh();
 })();
 
-/* Search every native Contents tree, preserving its hierarchy and disclosure state. */
+/* Search native query trees and catalogs without changing their query results. */
 (() => {
   window.notesContentsSearch?.abort();
   const controller = new AbortController();
   window.notesContentsSearch = controller;
   const { signal } = controller;
-  const selector = ".notes-contents-tree";
+  const selector = ".notes-contents-tree, .notes-catalog";
   const states = new Map();
   let frame = null;
   const normalize = (text) => text.normalize("NFKC").toLocaleLowerCase().replace(/ё/g, "е");
   const pageLink = (row) => row.querySelector(":scope > a, :scope > details > summary > a");
+  const catalogRows = (catalog) => catalog.querySelectorAll(":scope > .notes-catalog-item");
+  const filterCatalog = (catalog, terms) => {
+    let count = 0;
+    for (const row of catalogRows(catalog)) {
+      const text = normalize([...row.querySelectorAll(".notes-catalog-field:not([hidden])")]
+        .map((field) => field.textContent).join(" "));
+      const matches = terms.every((term) => text.includes(term));
+      row.classList.toggle("notes-catalog-search-hidden", !matches);
+      if (matches) count++;
+    }
+    return count;
+  };
   const restore = (state) => {
     state.tree.classList.remove("notes-contents-search-hidden");
+    state.tree.querySelectorAll(".notes-catalog-search-hidden").forEach((row) =>
+      row.classList.remove("notes-catalog-search-hidden"));
     state.results.replaceChildren();
   };
   const apply = (state) => {
     const terms = normalize(state.input.value).trim().split(/\s+/).filter(Boolean);
+    if (state.catalog) {
+      const count = filterCatalog(state.tree, terms);
+      state.status.textContent = !terms.length ? "" : count ? `${count} found` : "No matches";
+      return;
+    }
     restore(state);
     state.status.textContent = "";
     if (!terms.length) return;
@@ -1139,8 +1158,10 @@ window.notesSubtreeSearch = new AbortController();
     const input = document.createElement("input");
     input.type = "search";
     input.className = "notes-page-list-filter";
-    input.placeholder = "Search pages…";
-    input.setAttribute("aria-label", "Search Contents pages");
+    const catalog = tree.matches(".notes-catalog");
+    input.placeholder = catalog ? "Search…" : "Search pages…";
+    input.setAttribute("aria-label", catalog ? "Search visible catalog fields" : "Search Contents pages");
+    input.autocomplete = "off";
     input.value = previous?.input.value || "";
     const status = document.createElement("span");
     status.setAttribute("aria-live", "polite");
@@ -1149,7 +1170,7 @@ window.notesSubtreeSearch = new AbortController();
     results.className = "notes-contents-search-results";
     panel.append(results);
     tree.before(panel);
-    const state = { tree, panel, input, status, results,
+    const state = { tree, panel, input, status, results, catalog,
       host: tree.closest(".custom-query") || tree.parentElement };
     states.set(tree, state);
     for (const type of ["pointerdown", "mousedown", "click", "keydown", "keyup"])
@@ -1182,7 +1203,7 @@ window.notesSubtreeSearch = new AbortController();
     } finally {
       if (!signal.aborted) observer.observe(document.body, {
         childList: true, subtree: true, characterData: true,
-        attributes: true, attributeFilter: ["title", "href"],
+        attributes: true, attributeFilter: ["title", "href", "hidden"],
       });
     }
   };
