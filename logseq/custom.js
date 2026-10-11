@@ -851,3 +851,242 @@ window.notesFeatureEnabled = (key) => {
   });
   void refresh().catch((error) => console.warn("Reading mode:", error));
 })();
+
+/* Opt-in subtree search: searchable:: true on any parent block. */
+window.notesSubtreeSearch?.abort();
+window.notesSubtreeSearch = new AbortController();
+(() => {
+  const { signal } = window.notesSubtreeSearch;
+  const states = new Map();
+  let mountTimer = null;
+  let mounting = false;
+  let mountAgain = false;
+  const api = () => window.logseq?.api;
+  const normalize = (value) =>
+    String(value || "")
+      .normalize("NFKC")
+      .toLocaleLowerCase()
+      .replace(/ё/g, "е");
+  const uuidOf = (node) => node.getAttribute("blockid");
+  const restore = (state) => {
+    for (const [uuid, collapsed] of state.opened)
+      api()?.set_block_collapsed(uuid, collapsed);
+    state.opened.clear();
+    clearTimeout(state.timer);
+    state.host
+      .querySelectorAll(".notes-subtree-hidden")
+      .forEach((n) => n.classList.remove("notes-subtree-hidden"));
+  };
+  const apply = () => {
+    const hidden = new Map();
+    for (const state of states.values()) {
+      for (const node of state.host.querySelectorAll(".ls-block")) {
+        if (node.closest(".custom-query")) continue;
+        hidden.set(node, hidden.get(node) ||
+          (!!state.keep && !state.keep.has(uuidOf(node))));
+      }
+    }
+    for (const [node, excluded] of hidden)
+      node.classList.toggle("notes-subtree-hidden", excluded);
+  };
+  const search = async (state) => {
+    const version = ++state.version;
+    const terms = normalize(state.input.value)
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!terms.length) {
+      state.keep = null;
+      restore(state);
+      state.status.textContent = "";
+      apply();
+      return;
+    }
+    try {
+      const tree = await api().get_block(state.uuid, { includeChildren: true });
+      if (
+        signal.aborted ||
+        version !== state.version ||
+        !state.host.isConnected
+      )
+        return;
+      const keep = new Set(),
+        expand = new Map();
+      let count = 0;
+      const visit = (node, parents, inherited) => {
+        const content = String(node.content || "").replace(
+          /^\s*[\w-]+::.*$/gm,
+          "",
+        );
+        const match = terms.every((term) => normalize(content).includes(term));
+        if (match) {
+          count++;
+          parents.forEach((parent) => {
+            keep.add(parent.uuid);
+            expand.set(parent.uuid, parent);
+          });
+        }
+        if (match || inherited) keep.add(node.uuid);
+        for (const child of node.children || [])
+          visit(child, [...parents, node], inherited || match);
+      };
+      if (!tree) throw new Error("Search root is unavailable");
+      for (const child of tree.children || []) visit(child, [tree], false);
+      state.keep = keep;
+      // Open only paths to hits. Remember the original fold state for clearing.
+      for (const [uuid, node] of expand) {
+        const collapsed =
+          node.collapsed === true ||
+          node.properties?.collapsed === true ||
+          node.properties?.collapsed === "true";
+        if (collapsed) {
+          if (!state.opened.has(uuid)) state.opened.set(uuid, true);
+          api().set_block_collapsed(uuid, false);
+        }
+      }
+      state.status.textContent = count ? `${count} found` : "No matches";
+      apply(state);
+    } catch (error) {
+      if (signal.aborted || version !== state.version) return;
+      state.status.textContent = "Search unavailable";
+      console.warn("Subtree search:", error);
+    }
+  };
+  const mount = async () => {
+    if (!api()) return;
+    for (const [host, state] of states) {
+      if (!host.isConnected) {
+        state.version++;
+        restore(state);
+        states.delete(host);
+      }
+    }
+    try {
+      const rows = await api().datascript_query(
+        "[:find (pull ?b [:block/uuid]) ?enabled :where [?b :block/properties ?props] [(get ?props :searchable) ?enabled]]",
+      );
+      if (signal.aborted) return;
+      const enabled = new Set(
+        (rows || [])
+          .filter((row) => row[1] === true || row[1] === "true")
+          .map((row) => row[0]["block/uuid"] || row[0].uuid),
+      );
+      for (const host of document.querySelectorAll(".ls-block[blockid]")) {
+        const uuid = uuidOf(host);
+        if (!enabled.has(uuid) || host.closest(".custom-query, .references"))
+          continue;
+        if (states.has(host) && states.get(host).panel.isConnected) continue;
+        if (states.has(host)) {
+          restore(states.get(host));
+          states.delete(host);
+        }
+        const content = [...host.querySelectorAll(".block-content")].find(
+          (n) => n.closest(".ls-block") === host,
+        );
+        if (!content) continue;
+        const panel = document.createElement("div");
+        panel.className = "notes-subtree-search";
+        const input = document.createElement("input");
+        input.type = "search";
+        input.placeholder = "Search";
+        input.setAttribute("aria-label", "Search nested blocks");
+        const status = document.createElement("span");
+        status.setAttribute("aria-live", "polite");
+        panel.append(input, status);
+        content.append(panel);
+        const state = {
+          host,
+          uuid,
+          input,
+          status,
+          panel,
+          opened: new Map(),
+          keep: null,
+          version: 0,
+        };
+        states.set(host, state);
+        for (const event of [
+          "mousedown",
+          "click",
+          "keydown",
+          "keyup",
+          "pointerdown",
+        ])
+          panel.addEventListener(event, (e) => e.stopPropagation(), { signal });
+        input.addEventListener(
+          "input",
+          () => {
+            clearTimeout(state.timer);
+            state.timer = setTimeout(() => search(state), 120);
+          },
+          { signal },
+        );
+        host.addEventListener(
+          "change",
+          (e) => {
+            if (e.target.matches('input[type="checkbox"]') && input.value)
+              { clearTimeout(state.timer); state.timer = setTimeout(() => search(state), 100); }
+          },
+          { signal },
+        );
+      }
+      for (const [host, state] of states) {
+        if (!enabled.has(state.uuid)) {
+          restore(state);
+          state.panel.remove();
+          states.delete(host);
+        }
+      }
+    } catch (error) {
+      console.warn("Searchable blocks:", error);
+    }
+  };
+  const refresh = async () => {
+    mountTimer = null;
+    if (signal.aborted) return;
+    if (mounting) { mountAgain = true; return; }
+    mounting = true;
+    try {
+      await mount();
+      if (!signal.aborted) apply();
+    } finally {
+      mounting = false;
+      if (mountAgain && !signal.aborted) { mountAgain = false; schedule(); }
+    }
+  };
+  const schedule = () => {
+    clearTimeout(mountTimer);
+    mountTimer = setTimeout(refresh, 120);
+  };
+  const observer = new MutationObserver((changes) => {
+    if (changes.some((change) => {
+      const element = change.target.nodeType === Node.ELEMENT_NODE
+        ? change.target : change.target.parentElement;
+      if (element?.closest(".notes-subtree-search")) return false;
+      return element?.closest(".ls-block") ||
+        [...change.addedNodes, ...change.removedNodes].some((node) =>
+          node.nodeType === Node.ELEMENT_NODE &&
+          (node.matches(".ls-block") || node.querySelector(".ls-block")));
+    })) schedule();
+  });
+  observer.observe(document.body, {
+    childList: true, subtree: true, characterData: true,
+    attributes: true, attributeFilter: ["blockid"],
+  });
+  signal.addEventListener("abort", () => {
+    clearTimeout(mountTimer);
+    observer.disconnect();
+    for (const s of states.values()) {
+      restore(s);
+      s.panel.remove();
+    }
+  });
+  window.addEventListener(
+    "beforeunload",
+    () => {
+      for (const s of states.values()) restore(s);
+    },
+    { signal },
+  );
+  refresh();
+})();

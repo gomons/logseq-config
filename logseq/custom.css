@@ -333,3 +333,33 @@ div.flex-1.page.relative > :is(
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* Reusable searchable:: true block control. */
+.notes-subtree-search span {
+  font-size: 0.85em;
+  color: var(--ls-secondary-text-color);
+}
+.notes-subtree-hidden {
+  display: none !important;
+}
+
+.notes-subtree-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0.4rem 0 0.65rem;
+  clear: both;
+  flex-basis: 100%;
+  box-sizing: border-box;
+}
+.notes-subtree-search input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 0.4rem;
+  background: var(--ls-primary-background-color);
+  color: var(--ls-primary-text-color);
+  box-sizing: border-box;
+  min-width: 0;
+}
