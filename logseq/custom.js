@@ -355,7 +355,8 @@ window.notesFeatureEnabled = (key) => {
       link.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg><span>Contents</span>';
       for (const type of ["pointerdown", "mousedown", "click"])
         link.addEventListener(type, (event) => event.stopPropagation(), { signal });
-      heading.insertAdjacentElement("afterend", link);
+      const anchor = heading.parentElement.querySelector(":scope > .notes-read-mode-toggle") || heading;
+      anchor.insertAdjacentElement("afterend", link);
       links.add(link);
     });
     for (const link of links) if (!link.isConnected) links.delete(link);
@@ -479,4 +480,330 @@ window.notesFeatureEnabled = (key) => {
       heading.classList.remove("notes-has-namespace-title"));
   }, { once: true });
   render();
+})();
+
+/* Per-page reading mode. Stored in the page's preamble.
+   Stop Logseq's delegated edit handlers, but preserve browser text selection. */
+(() => {
+  window.notesReadMode?.abort();
+  const controller = new AbortController();
+  window.notesReadMode = controller;
+  const signal = controller.signal;
+  const key = "read-only";
+  const states = new WeakMap();
+  const api = () => window.logseq?.api;
+  // Logseq's block selection is separate from the browser's text selection.
+  const clearBlockSelection = () => {
+    const app = api();
+    if (!app?.get_state_from_store || !app?.set_state_from_store) return;
+    if (
+      !app.get_state_from_store("selection/mode") &&
+      !app.get_state_from_store("selection/blocks")?.length
+    )
+      return;
+    for (const [name, value] of Object.entries({
+      "selection/mode": false,
+      "selection/blocks": null,
+      "selection/start-block": null,
+      "selection/selected-all?": false,
+    }))
+      app.set_state_from_store(name, value);
+  };
+  const truth = (value) =>
+    value === true || String(value).toLowerCase() === "true";
+  const property = (block) =>
+    block?.content?.match(/^read-only::[ \t]*(true|false)[ \t]*$/im)?.[1] ??
+    block?.properties?.[key] ??
+    block?.properties?.readOnly;
+  // A first block may contain a query after its properties, and the native API
+  // does not always expose pre-block? immediately after reindexing/insertion.
+  const preamble = (blocks) =>
+    blocks.find((b) => b.preBlock || b["pre-block?"]) ||
+    (/^[\w-]+::/.test(blocks[0]?.content?.trimStart() || "")
+      ? blocks[0]
+      : null);
+  const read = async (name) => {
+    const page = await api().get_page(name);
+    const blocks = (await api().get_page_blocks_tree(name)) || [];
+    const holder = preamble(blocks);
+    return {
+      blocks,
+      holder,
+      locked: truth(holder ? property(holder) : property(page)),
+    };
+  };
+  const paint = (page, button, locked) => {
+    if (locked && !page.classList.contains("notes-read-only"))
+      clearBlockSelection();
+    page.classList.toggle("notes-read-only", locked);
+    button.dataset.mode = locked ? "view" : "edit";
+    if (!button.querySelector(".notes-edit-switch")) {
+      button.innerHTML =
+        '<span class="notes-edit-switch" aria-hidden="true"></span><span>Edit</span>';
+    }
+    button.setAttribute("role", "switch");
+    button.setAttribute("aria-checked", String(!locked));
+    button.setAttribute(
+      "aria-label",
+      "Edit mode",
+    );
+    button.title = locked
+      ? "Reading mode. Switch to editing."
+      : "Editing mode. Switch to reading.";
+  };
+  const saveMode = async (name, info, locked) => {
+    const holder = info.holder;
+    if (holder) {
+      const content = /^read-only::[^\n]*/im.test(
+        holder.content || "",
+      )
+        ? holder.content.replace(
+            /^read-only::[^\n]*/im,
+            `read-only:: ${locked}`,
+          )
+        : `read-only:: ${locked}\n${holder.content || ""}`;
+      await api().update_block(holder.uuid, content);
+    } else {
+      const first = info.blocks[0];
+      const created = await api().insert_block(
+        first?.uuid || name,
+        `read-only:: ${locked}`,
+        { before: true, sibling: Boolean(first), focus: false },
+      );
+      if (created?.uuid)
+        await api().update_block(
+          created.uuid,
+          `read-only:: ${locked}`,
+        );
+    }
+  };
+
+  const toggleMode = async (page, button, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const current = states.get(page);
+    if (!current || current.busy) return;
+    current.busy = true;
+    button.disabled = true;
+    try {
+      await api().exit_editing_mode?.();
+      const info = await read(current.name);
+      const locked = !info.locked;
+      await saveMode(current.name, info, locked);
+      const saved = await read(current.name);
+      if (saved.locked !== locked)
+        throw new Error("The reading mode was not saved.");
+      if (!signal.aborted && states.get(page) === current)
+        paint(page, button, saved.locked);
+    } catch (error) {
+      console.error("Reading mode:", error);
+      button.title = "Could not save reading mode. Try again.";
+      button.setAttribute("aria-label", button.title);
+    } finally {
+      current.busy = false;
+      button.disabled = false;
+    }
+  };
+
+  const createToggle = (page, title) => {
+    let button = page.querySelector(".notes-read-mode-toggle");
+    if (!button) {
+      button = document.createElement("button");
+      button.type = "button";
+      button.className = "notes-read-mode-toggle";
+      button.setAttribute("aria-label", "Edit page");
+      title.insertAdjacentElement("afterend", button);
+      button.addEventListener(
+        "click",
+        (event) => void toggleMode(page, button, event),
+        { signal },
+      );
+    }
+    // A journal can mount before its title; never leave controls on a stale host.
+    if (title.nextElementSibling !== button)
+      title.insertAdjacentElement("afterend", button);
+    return button;
+  };
+
+  async function refresh() {
+    if (!api()?.get_page_blocks_tree) return;
+    for (const page of document.querySelectorAll(
+      ".page, .journal-item, .sidebar-item",
+    )) {
+      if (page.matches(".page") && page.closest(".journal-item, .sidebar-item"))
+        continue;
+      let title = page.querySelector(".ls-page-title");
+      let name = (
+        title?.matches("[data-ref]")
+          ? title
+          : title?.querySelector("[data-ref]")
+      )?.getAttribute("data-ref");
+      if (!name && page.matches(".journal-item")) {
+        title = page.querySelector(".journal-title");
+        const link = title?.matches('a[href*="#/page/"]') ? title
+          : title?.querySelector('a[href*="#/page/"]');
+        const href = link?.getAttribute("href");
+        if (href) name = decodeURIComponent(href.split("#/page/")[1]);
+      }
+      if (!name && page.matches(".sidebar-item")) {
+        title = page.querySelector(
+          ".sidebar-item-header > button[aria-controls]",
+        );
+        name = title?.textContent.trim();
+      }
+      if (!title || !name || !(await api().get_page(name))) continue;
+      if (signal.aborted || !title.isConnected || !page.contains(title)) continue;
+      let state = states.get(page);
+      if (state?.busy && state.name === name) continue;
+      const button = createToggle(page, title);
+      state = { name, busy: true };
+      states.set(page, state);
+      try {
+        const info = await read(name);
+        if (!signal.aborted && page.isConnected && states.get(page) === state) {
+          paint(page, button, info.locked);
+        }
+      } catch (error) {
+        console.warn("Reading mode:", error);
+      } finally {
+        state.busy = false;
+      }
+    }
+  }
+  const safeControl = (target) =>
+    target.closest(
+      [
+        ".notes-read-mode-toggle", ".breadcrumb .page-reference", ".sidebar-item-header",
+        ".block-control", ".bullet-link-wrap", ".block-children-left-border",
+        ".open-block-ref-link", ".block-ref-wrap", ".page-blocks-collapse-control",
+        ".foldable-title", ".notes-page-list-filter", ".notes-subtree-search",
+        ".notes-contents-search", ".notes-catalog-search",
+        "summary", "a[href]", ".page-ref", ".tag", "audio[controls]", "video[controls]",
+        ".asset-action-btn.text-left", ".asset-action-btn:has(.ti-copy, .ti-maximize)",
+        ".custom-query a:has(.ti-refresh)",
+      ].join(", "),
+    );
+  const editableSearch = (target) =>
+    target.matches('input[type="search"]');
+  function guard(event) {
+    const target =
+      event.target instanceof Element
+        ? event.target
+        : event.target.parentElement;
+    const page = target?.closest(".notes-read-only");
+    if (!page) return;
+    // Viewing controls must never permit content changes or block dragging.
+    if (["beforeinput", "paste", "cut", "drop", "dragstart"].includes(event.type)) {
+      if (editableSearch(target)) return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      return;
+    }
+    if (
+      ["pointerdown", "mousedown", "touchstart", "click"].includes(
+        event.type,
+      ) ||
+      (event.type === "keydown" && event.key === "Escape")
+    )
+      clearBlockSelection();
+    // Reading mode locks text editing but keeps checklists and task statuses interactive.
+    if (event.type !== "contextmenu" && event.type !== "dblclick" && (
+      target.closest('input[type="checkbox"], .task-status, .marker-switch') ||
+      safeControl(target)
+    ))
+      return;
+    // These must keep their default action: dragging selects text; mouseup retains it.
+    if (
+      [
+        "pointerdown",
+        "pointerup",
+        "pointermove",
+        "mousedown",
+        "mouseup",
+        "mousemove",
+        "touchstart",
+        "touchend",
+      ].includes(event.type)
+    ) {
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (event.type === "keydown") {
+      if (editableSearch(target)) return;
+      const copy =
+        (event.ctrlKey || event.metaKey) &&
+        ["c", "a"].includes(event.key.toLowerCase());
+      const navigation = [
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "PageUp",
+        "PageDown",
+        "Home",
+        "End",
+        "Tab",
+        "Escape",
+      ].includes(event.key);
+      event.stopImmediatePropagation();
+      if (!copy && !navigation) event.preventDefault();
+      return;
+    }
+    event.stopImmediatePropagation();
+    // Context menu keeps the native Copy action. Double click keeps word selection.
+    if (!["contextmenu", "dblclick"].includes(event.type))
+      event.preventDefault();
+  }
+  for (const type of [
+    "pointerdown",
+    "pointerup",
+    "pointermove",
+    "mousedown",
+    "mouseup",
+    "mousemove",
+    "touchstart",
+    "touchend",
+    "click",
+    "dblclick",
+    "keydown",
+    "beforeinput",
+    "paste",
+    "cut",
+    "drop",
+    "dragstart",
+    "contextmenu",
+  ]) {
+    document.addEventListener(type, guard, { capture: true, signal });
+  }
+  let timer = null;
+  const schedule = () => {
+    if (timer !== null || signal.aborted) return;
+    timer = setTimeout(() => {
+      timer = null;
+      if (!signal.aborted) void refresh().catch((error) => console.warn("Reading mode:", error));
+    }, 150);
+  };
+  const metadata = ".ls-page-title, .journal-title, .sidebar-item-header, .block-properties";
+  const mounts = ".page, .journal-item, .sidebar-item, " + metadata;
+  const observer = new MutationObserver((changes) => {
+    if (changes.some((change) => {
+      const element = change.target.nodeType === 1 ? change.target : change.target.parentElement;
+      if (element?.closest(".notes-read-mode-toggle")) return false;
+      return element?.closest(metadata) ||
+        [...change.addedNodes, ...change.removedNodes].some((node) =>
+          node.nodeType === 1 && (node.matches(mounts) || node.querySelector(mounts)));
+    })) schedule();
+  });
+  observer.observe(document.body, {
+    childList: true, subtree: true, characterData: true,
+    attributes: true, attributeFilter: ["data-ref"],
+  });
+  window.addEventListener("hashchange", schedule, { signal });
+  signal.addEventListener("abort", () => {
+    observer.disconnect();
+    if (timer !== null) clearTimeout(timer);
+    document.querySelectorAll(".notes-read-mode-toggle").forEach((button) => button.remove());
+    document.querySelectorAll(".notes-read-only").forEach((page) => page.classList.remove("notes-read-only"));
+  });
+  void refresh().catch((error) => console.warn("Reading mode:", error));
 })();

@@ -77,6 +77,7 @@ div.flex-1.page.relative > :is(
   background: transparent;
   color: var(--ls-secondary-text-color);
   font-size: 0.8rem;
+  line-height: 1.4;
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
@@ -86,7 +87,7 @@ div.flex-1.page.relative > :is(
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  transform: translateY(-2px);
+  display: block;
 }
 :has(> .notes-contents-shortcut, > .notes-read-mode-toggle) {
   align-items: baseline;
@@ -143,4 +144,53 @@ div.flex-1.page.relative > :is(
     var(--ls-secondary-background-color) 90%, var(--ls-primary-text-color) 10%);
   box-shadow: inset 0 0 0 1px var(--ls-border-color);
   border-radius: 6px;
+}
+
+/* Reading mode keeps text selectable and native properties visible. */
+.notes-read-mode-toggle {
+  color: var(--ls-secondary-text-color);
+  -webkit-tap-highlight-color: transparent;
+}
+.notes-read-mode-toggle:is(:hover, :active, :focus) {
+  background: transparent;
+}
+.notes-read-mode-toggle:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 2px;
+}
+.notes-read-mode-toggle > span:last-child {
+  display: block;
+  line-height: 1;
+}
+.notes-edit-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--ls-secondary-text-color);
+}
+.notes-edit-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ls-primary-background-color);
+}
+.notes-read-mode-toggle[aria-checked="true"] .notes-edit-switch {
+  background: var(--ls-link-text-color);
+}
+.notes-read-mode-toggle[aria-checked="true"] .notes-edit-switch::after {
+  transform: translateX(12px);
+}
+.notes-read-mode-toggle:disabled {
+  opacity: 1;
+  cursor: wait;
+}
+.notes-read-only .block-content {
+  -webkit-user-select: text;
+  user-select: text;
 }
