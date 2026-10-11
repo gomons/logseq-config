@@ -1,0 +1,5 @@
+/* Hide Unlinked References when enabled in config.edn. */
+.notes-hide-unlinked-references .references.page-unlinked {
+  display: none !important;
+}
+
