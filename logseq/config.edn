@@ -1,5 +1,9 @@
 {:meta/version 1
 
+ ;; Custom page navigation. Set either flag to false to hide it.
+ :notes/favorites? true
+ :notes/contents-shortcut? true
+
  ;; Hide Unlinked References. Set to false to show the native section.
  :notes/hide-unlinked-references? true
 

@@ -339,14 +339,21 @@ window.notesFeatureEnabled = (key) => {
     frame = null;
     observer.disconnect();
     document.querySelectorAll(headings).forEach((heading) => {
-      const existing = heading.parentElement.querySelector(":scope > .notes-contents-shortcut");
+      const host = heading.parentElement;
+      const main = heading.matches(".ls-page-title, .journal-title") && heading.closest("#main-content-container");
+      let row = main && host.previousElementSibling?.matches(".notes-page-navigation")
+        ? host.previousElementSibling : null;
+      const existing = (row || host).querySelector(":scope > .notes-contents-shortcut");
       const name = heading.getAttribute("data-ref") ||
         heading.querySelector("[data-ref]")?.getAttribute("data-ref") || heading.textContent.trim();
-      if (name.toLowerCase() === "contents") {
+      if (!window.notesFeatureEnabled("notes/contents-shortcut?") || name.toLowerCase() === "contents") {
         existing?.remove();
         return;
       }
-      if (existing) return;
+      if (existing) {
+        if (main && row && row.firstElementChild !== existing) row.prepend(existing);
+        return;
+      }
       const link = document.createElement("a");
       link.className = "notes-contents-shortcut";
       link.href = "#/page/contents";
@@ -355,8 +362,14 @@ window.notesFeatureEnabled = (key) => {
       link.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg><span>Contents</span>';
       for (const type of ["pointerdown", "mousedown", "click"])
         link.addEventListener(type, (event) => event.stopPropagation(), { signal });
-      const anchor = heading.parentElement.querySelector(":scope > .notes-read-mode-toggle") || heading;
-      anchor.insertAdjacentElement("afterend", link);
+      if (main) {
+        if (!row) {
+          row = document.createElement("div");
+          row.className = "notes-page-navigation";
+          host.before(row);
+        }
+        row.prepend(link);
+      } else heading.insertAdjacentElement("afterend", link);
       links.add(link);
     });
     for (const link of links) if (!link.isConnected) links.delete(link);
@@ -378,6 +391,117 @@ window.notesFeatureEnabled = (key) => {
     if (frame !== null) cancelAnimationFrame(frame);
     links.forEach((link) => link.remove());
     links.clear();
+  }, { once: true });
+  refresh();
+})();
+
+/* Show graph Favorites above page and journal headings. */
+(() => {
+  window.notesFavorites?.abort();
+  const controller = new AbortController();
+  window.notesFavorites = controller;
+  const { signal } = controller;
+  const panels = new Map();
+  const headingSelector =
+    "#main-content-container .ls-page-title, #main-content-container .journal-title";
+  const removePanel = (host) => {
+    panels.get(host)?.remove();
+    panels.delete(host);
+  };
+  let busy = false;
+  let signature = null;
+  let favorites = [];
+  const render = () => {
+    if (signal.aborted) return;
+    for (const heading of document.querySelectorAll(headingSelector)) {
+      const host = heading.parentElement;
+      let nav = panels.get(host);
+      if (!window.notesFeatureEnabled("notes/favorites?") || !favorites.length) {
+        removePanel(host);
+        continue;
+      }
+      if (!nav || !nav.isConnected) {
+        nav = document.createElement("nav");
+        nav.className = "notes-favorites";
+        nav.setAttribute("aria-label", "Favorites");
+        for (const type of ["pointerdown", "mousedown", "touchstart", "click"])
+          nav.addEventListener(type, (event) => event.stopPropagation(), { signal });
+        let row = host.previousElementSibling;
+        if (!row?.matches(".notes-page-navigation")) {
+          row = document.createElement("div");
+          row.className = "notes-page-navigation";
+          host.before(row);
+        }
+        row.append(nav);
+        panels.set(host, nav);
+      }
+      const shortcut = nav.parentElement.querySelector(":scope > .notes-contents-shortcut");
+      if (shortcut && nav.parentElement.firstElementChild !== shortcut)
+        nav.parentElement.prepend(shortcut);
+      if (nav.dataset.signature === signature) continue;
+      nav.dataset.signature = signature;
+      const nodes = [];
+      const star = document.createElement("span");
+      star.className = "notes-favorites-star";
+      star.textContent = "★";
+      star.setAttribute("aria-hidden", "true");
+      nodes.push(star);
+      favorites.forEach(({ name, label }, index) => {
+        if (index) {
+          const separator = document.createElement("span");
+          separator.textContent = "·";
+          separator.setAttribute("aria-hidden", "true");
+          nodes.push(separator);
+        }
+        const link = document.createElement("a");
+        link.textContent = label.split("/").pop();
+        link.href = "#/page/" + encodeURIComponent(name);
+        link.title = label;
+        nodes.push(link);
+      });
+      nav.replaceChildren(...nodes);
+    }
+    for (const host of panels.keys()) {
+      if (!host.isConnected) removePanel(host);
+    }
+  };
+  const refresh = async () => {
+    const api = window.logseq?.api;
+    if (busy || !api?.get_current_graph_favorites) return;
+    busy = true;
+    try {
+      const names = [...new Set(await api.get_current_graph_favorites())]
+        .filter((name) => typeof name === "string" && name.trim());
+      const next = JSON.stringify([await api.get_current_graph?.(), names]);
+      if (next !== signature) {
+        favorites = await Promise.all(names.map(async (name) => {
+          const page = await api.get_page(name);
+          return { name, label: page?.originalName || page?.["original-name"] || name };
+        }));
+        signature = next;
+      }
+      if (signal.aborted) return;
+      render();
+    } catch (error) {
+      console.warn("Favorites:", error);
+    } finally {
+      busy = false;
+    }
+  };
+  // Reuse cached Favorites as soon as Logseq mounts a new heading.
+  const observer = new MutationObserver((changes) => {
+    const headingChanged = changes.some(({ addedNodes, removedNodes }) =>
+      [...addedNodes, ...removedNodes].some((node) =>
+        node.nodeType === 1 &&
+        (node.matches(headingSelector) || node.querySelector(headingSelector))));
+    if (headingChanged) render();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  const timer = setInterval(refresh, 1000);
+  signal.addEventListener("abort", () => {
+    observer.disconnect();
+    clearInterval(timer);
+    for (const host of panels.keys()) removePanel(host);
   }, { once: true });
   refresh();
 })();

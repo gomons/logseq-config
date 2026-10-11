@@ -449,6 +449,76 @@ div.flex-1.page.relative > :is(
   overflow-wrap: anywhere;
 }
 
+/* Favorites wrap around Contents, then use the full width below it. */
+.notes-page-navigation {
+  display: flow-root;
+  margin-bottom: 0.25rem;
+}
+.notes-page-navigation + :has(> :is(.ls-page-title, .journal-title)),
+.notes-page-navigation + * > :is(.ls-page-title, .journal-title) {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+.notes-page-navigation:empty {
+  display: none;
+}
+.notes-page-navigation > .notes-favorites {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+.notes-page-navigation > .notes-favorites > :not(:last-child) {
+  margin-right: 0.5rem;
+}
+.notes-page-navigation > .notes-favorites > a {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.notes-page-navigation > .notes-contents-shortcut {
+  float: right;
+  color: var(--ls-link-text-color);
+  min-height: 0;
+  margin: 0 0 0 1rem;
+  padding: 0;
+}
+.notes-page-navigation > .notes-contents-shortcut svg {
+  color: var(--ls-secondary-text-color);
+}
+
+/* Favorites use the same left edge as the page heading. */
+.notes-favorites {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.5rem;
+  margin-bottom: 0.6rem;
+  /* Native titles have 8px padding and a -6px margin. */
+  margin-left: 2px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.notes-favorites > span {
+  color: var(--ls-secondary-text-color);
+}
+@media (max-width: 640px) {
+  .notes-page-navigation > .notes-contents-shortcut {
+    float: none;
+    display: flex;
+    width: fit-content;
+    margin: 0 0 0.5rem;
+  }
+  .notes-page-navigation > .notes-favorites {
+    clear: both;
+  }
+  .notes-favorites {
+    margin-left: 0;
+  }
+}
+
 /* Shared query catalog; field selection and visibility belong to the query. */
 .notes-catalog {
   list-style: none;
