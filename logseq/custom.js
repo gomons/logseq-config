@@ -700,97 +700,10 @@ window.notesFeatureEnabled = (key) => {
       locked: truth(holder ? property(holder) : property(page)),
     };
   };
-  const paint = (page, button, locked) => {
+  const paint = (page, locked) => {
     if (locked && !page.classList.contains("notes-read-only"))
       clearBlockSelection();
     page.classList.toggle("notes-read-only", locked);
-    button.dataset.mode = locked ? "view" : "edit";
-    if (!button.querySelector(".notes-edit-switch")) {
-      button.innerHTML =
-        '<span class="notes-edit-switch" aria-hidden="true"></span><span>Edit</span>';
-    }
-    button.setAttribute("role", "switch");
-    button.setAttribute("aria-checked", String(!locked));
-    button.setAttribute(
-      "aria-label",
-      "Edit mode",
-    );
-    button.title = locked
-      ? "Reading mode. Switch to editing."
-      : "Editing mode. Switch to reading.";
-  };
-  const saveMode = async (name, info, locked) => {
-    const holder = info.holder;
-    if (holder) {
-      const content = /^read-only::[^\n]*/im.test(
-        holder.content || "",
-      )
-        ? holder.content.replace(
-            /^read-only::[^\n]*/im,
-            `read-only:: ${locked}`,
-          )
-        : `read-only:: ${locked}\n${holder.content || ""}`;
-      await api().update_block(holder.uuid, content);
-    } else {
-      const first = info.blocks[0];
-      const created = await api().insert_block(
-        first?.uuid || name,
-        `read-only:: ${locked}`,
-        { before: true, sibling: Boolean(first), focus: false },
-      );
-      if (created?.uuid)
-        await api().update_block(
-          created.uuid,
-          `read-only:: ${locked}`,
-        );
-    }
-  };
-
-  const toggleMode = async (page, button, event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const current = states.get(page);
-    if (!current || current.busy) return;
-    current.busy = true;
-    button.disabled = true;
-    try {
-      await api().exit_editing_mode?.();
-      const info = await read(current.name);
-      const locked = !info.locked;
-      await saveMode(current.name, info, locked);
-      const saved = await read(current.name);
-      if (saved.locked !== locked)
-        throw new Error("The reading mode was not saved.");
-      if (!signal.aborted && states.get(page) === current)
-        paint(page, button, saved.locked);
-    } catch (error) {
-      console.error("Reading mode:", error);
-      button.title = "Could not save reading mode. Try again.";
-      button.setAttribute("aria-label", button.title);
-    } finally {
-      current.busy = false;
-      button.disabled = false;
-    }
-  };
-
-  const createToggle = (page, title) => {
-    let button = page.querySelector(".notes-read-mode-toggle");
-    if (!button) {
-      button = document.createElement("button");
-      button.type = "button";
-      button.className = "notes-read-mode-toggle";
-      button.setAttribute("aria-label", "Edit page");
-      title.insertAdjacentElement("afterend", button);
-      button.addEventListener(
-        "click",
-        (event) => void toggleMode(page, button, event),
-        { signal },
-      );
-    }
-    // A journal can mount before its title; never leave controls on a stale host.
-    if (title.nextElementSibling !== button)
-      title.insertAdjacentElement("afterend", button);
-    return button;
   };
 
   async function refresh() {
@@ -823,13 +736,12 @@ window.notesFeatureEnabled = (key) => {
       if (signal.aborted || !title.isConnected || !page.contains(title)) continue;
       let state = states.get(page);
       if (state?.busy && state.name === name) continue;
-      const button = createToggle(page, title);
       state = { name, busy: true };
       states.set(page, state);
       try {
         const info = await read(name);
         if (!signal.aborted && page.isConnected && states.get(page) === state) {
-          paint(page, button, info.locked);
+          paint(page, info.locked);
         }
       } catch (error) {
         console.warn("Reading mode:", error);
@@ -841,7 +753,7 @@ window.notesFeatureEnabled = (key) => {
   const safeControl = (target) =>
     target.closest(
       [
-        ".notes-read-mode-toggle", ".breadcrumb .page-reference", ".sidebar-item-header",
+        ".notes-property-toggle", ".breadcrumb .page-reference", ".sidebar-item-header",
         ".block-control", ".bullet-link-wrap", ".block-children-left-border",
         ".open-block-ref-link", ".block-ref-wrap", ".page-blocks-collapse-control",
         ".foldable-title", ".notes-page-list-filter", ".notes-subtree-search",
@@ -956,7 +868,6 @@ window.notesFeatureEnabled = (key) => {
   const observer = new MutationObserver((changes) => {
     if (changes.some((change) => {
       const element = change.target.nodeType === 1 ? change.target : change.target.parentElement;
-      if (element?.closest(".notes-read-mode-toggle")) return false;
       return element?.closest(metadata) ||
         [...change.addedNodes, ...change.removedNodes].some((node) =>
           node.nodeType === 1 && (node.matches(mounts) || node.querySelector(mounts)));
@@ -970,7 +881,6 @@ window.notesFeatureEnabled = (key) => {
   signal.addEventListener("abort", () => {
     observer.disconnect();
     if (timer !== null) clearTimeout(timer);
-    document.querySelectorAll(".notes-read-mode-toggle").forEach((button) => button.remove());
     document.querySelectorAll(".notes-read-only").forEach((page) => page.classList.remove("notes-read-only"));
   });
   void refresh().catch((error) => console.warn("Reading mode:", error));
@@ -1747,6 +1657,123 @@ window.notesSubtreeSearch = new AbortController();
       }
       if (addedClass) title.classList.remove(className);
     });
+    controls.clear();
+  }, { once: true });
+  refresh();
+})();
+
+/* Boolean property checkboxes preserve native property labels and values. */
+(() => {
+  window.notesBooleanProperties?.abort();
+  const controller = new AbortController();
+  window.notesBooleanProperties = controller;
+  const { signal } = controller;
+  const controls = new Map();
+  const saving = new Set();
+  let timer = null;
+  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const valueOf = (element) => {
+    const copy = element.cloneNode(true);
+    copy.querySelectorAll(".notes-property-toggle").forEach((button) => button.remove());
+    return copy.textContent.trim().toLowerCase();
+  };
+  const paint = (state) => {
+    state.button.checked = state.value === "true";
+    state.button.classList.toggle("checked", state.button.checked);
+    state.button.setAttribute("aria-label", `Toggle ${state.key}`);
+    state.button.disabled = saving.has(`${state.uuid}:${state.key}`);
+  };
+  const change = async (state) => {
+    const id = `${state.uuid}:${state.key}`;
+    if (saving.has(id)) return;
+    saving.add(id);
+    for (const item of controls.values()) paint(item);
+    try {
+      const api = window.logseq.api;
+      const block = await api.get_block(state.uuid);
+      if (signal.aborted) return;
+      // Use the latest stored content, preserving all other properties and text.
+      const pattern = new RegExp(`^([ \\t]*${escape(state.key)}::[ \\t]*)(true|false)([ \\t]*)(?=\\r?$)`, "im");
+      if (!pattern.test(block?.content || "")) return;
+      const content = block.content.replace(pattern,
+        (_, prefix, value, suffix) => prefix + (value.toLowerCase() === "true" ? "false" : "true") + suffix);
+      await api.update_block(state.uuid, content);
+    } catch (error) {
+      state.button.title = "Could not update property";
+      console.warn("Boolean property:", error);
+    } finally {
+      saving.delete(id);
+      for (const item of controls.values()) paint(item);
+      schedule();
+    }
+  };
+  const refresh = () => {
+    timer = null;
+    if (signal.aborted) return;
+    observer.disconnect();
+    try {
+      for (const [element, state] of controls) {
+        if (!element.isConnected || !state.button.isConnected) {
+          state.button.remove();
+          controls.delete(element);
+        }
+      }
+      for (const element of document.querySelectorAll(".block-properties .page-property-value")) {
+        const value = valueOf(element);
+        const host = element.closest(".ls-block[blockid]");
+        const keyElement = element.parentElement.querySelector(".page-property-key");
+        const key = (keyElement?.getAttribute("data-ref") ||
+          keyElement?.querySelector("[data-ref]")?.getAttribute("data-ref") ||
+          keyElement?.textContent.replace(/:\s*$/, "").trim() || "").toLowerCase();
+        const uuid = host?.getAttribute("blockid");
+        const existing = controls.get(element);
+        if (!uuid || !/^[\w-]+$/.test(key) || !["true", "false"].includes(value) || host.querySelector("textarea")) {
+          existing?.button.remove();
+          controls.delete(element);
+          continue;
+        }
+        let state = existing;
+        if (state && (state.uuid !== uuid || state.key !== key)) {
+          state.button.remove();
+          controls.delete(element);
+          state = null;
+        }
+        if (!state) {
+          const button = document.createElement("input");
+          button.type = "checkbox";
+          button.className = "notes-property-toggle form-checkbox h-4 w-4 transition duration-150 ease-in-out cursor";
+          state = { button, uuid, key, value };
+          controls.set(element, state);
+          for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup",
+            "touchstart", "touchmove", "touchend", "touchcancel", "click", "keydown", "keyup"])
+            button.addEventListener(type, (event) => event.stopPropagation(), { signal });
+          button.addEventListener("change", () => void change(state), { signal });
+          element.append(button);
+        }
+        state.value = value;
+        paint(state);
+      }
+    } finally {
+      if (!signal.aborted) observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+  };
+  const schedule = () => {
+    if (signal.aborted || timer !== null) return;
+    timer = setTimeout(refresh, 50);
+  };
+  const observer = new MutationObserver((changes) => {
+    if (changes.some(({ target, addedNodes, removedNodes }) => {
+      const element = target.nodeType === 1 ? target : target.parentElement;
+      if (element?.closest(".notes-property-toggle")) return false;
+      return element?.closest(".block-properties, .ls-block") ||
+        [...addedNodes, ...removedNodes].some((node) => node.nodeType === 1 &&
+          (node.matches(".ls-block, .block-properties") || node.querySelector(".block-properties")));
+    })) schedule();
+  });
+  signal.addEventListener("abort", () => {
+    observer.disconnect();
+    clearTimeout(timer);
+    for (const state of controls.values()) state.button.remove();
     controls.clear();
   }, { once: true });
   refresh();
