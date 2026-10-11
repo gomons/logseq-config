@@ -25,3 +25,194 @@ window.notesFeatureEnabled = (key) => {
   refresh();
 })();
 
+/* Page navigation: direct subpages, leaf labels, counts and inline search. */
+(() => {
+  window.notesPageNavigation?.abort();
+  const controller = new AbortController();
+  window.notesPageNavigation = controller;
+  const { signal } = controller;
+  const panelSelector = ".page-hierarchy, .references.page-tags";
+  const titleSelector = ".ls-page-title .title[data-ref], .ls-page-title[data-ref]";
+  const pendingPanels = new Set();
+  const searchFields = new Set();
+  const normalize = (value) =>
+    (value || "").normalize("NFKC").toLocaleLowerCase().replace(/ё/g, "е");
+  const isDirectChild = (parent, target) => {
+    const prefix = parent.toLowerCase() + "/";
+    const child = target.slice(prefix.length);
+    return !!parent && target.toLowerCase().startsWith(prefix) &&
+      !!child && !child.includes("/");
+  };
+  const matchesSearch = (label, query) => {
+    const text = normalize(label);
+    return normalize(query).trim().split(/\s+/).filter(Boolean)
+      .every((term) => text.includes(term));
+  };
+
+  // Tagged pages exposes its native fold handler only on the arrow.
+  document.addEventListener("mousedown", (event) => {
+    if (event.button !== 0) return;
+    const title = event.target.closest?.(".references.page-tags .foldable-title");
+    if (!title || title.matches(".cursor") || event.target.closest("a, button, input")) return;
+    const control = title.querySelector("a.block-control");
+    if (!control) return;
+    event.preventDefault();
+    event.stopPropagation();
+    control.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  }, { signal });
+
+  // Preserve DOM nodes when their displayed text has not changed.
+  const setText = (element, text) => {
+    if (element && element.textContent !== text) element.textContent = text;
+  };
+
+  const filterRows = (panel) => {
+    const input = panel.querySelector(".notes-page-list-filter");
+    if (!input) return;
+    panel.querySelectorAll(".notes-navigation-row").forEach((row) => {
+      const link = row.querySelector(".notes-navigation-link");
+      if (!link) return;
+      row.classList.toggle("notes-page-filter-hidden",
+        !matchesSearch(link.dataset.searchText || link.textContent, input.value));
+    });
+  };
+
+  const addSearch = (panel, name) => {
+    if (panel.querySelector(".notes-page-list-filter")) return;
+    const header = panel.querySelector(".foldable-title")?.parentElement;
+    if (!header) return;
+    const input = document.createElement("input");
+    input.type = "search";
+    input.className = "notes-page-list-filter";
+    input.placeholder = "Search";
+    input.autocomplete = "off";
+    input.setAttribute("aria-label", `Filter ${name.toLowerCase()}`);
+    for (const type of ["pointerdown", "mousedown", "click", "keydown"])
+      input.addEventListener(type, (event) => event.stopPropagation(), { signal });
+    input.addEventListener("input", () => filterRows(panel), { signal });
+    searchFields.add(input);
+    // Keep search with the heading, outside the native collapsible content.
+    header.append(input);
+  };
+
+  const showLeafLink = (row, ref) => {
+    const target = ref.getAttribute("data-ref");
+    const label = (ref.textContent || target).replace(/^\[\[|\]\]$/g, "")
+      .trim().split("/").pop();
+    let link = row.querySelector(":scope > .notes-navigation-link");
+    if (!link) {
+      link = document.createElement("a");
+      link.className = "notes-navigation-link";
+      row.append(link);
+    }
+    setText(link, label);
+    const href = "#/page/" + encodeURIComponent(target);
+    if (link.getAttribute("href") !== href) link.setAttribute("href", href);
+    link.title = target;
+    row.classList.add("notes-navigation-row");
+  };
+
+  const showPathLinks = (row, ref) => {
+    const target = ref.getAttribute("data-ref");
+    const parts = target.split("/");
+    const label = (ref.textContent || target).replace(/^\[\[|\]\]$/g, "").trim();
+    const labels = label.split("/");
+    const names = labels.length === parts.length ? labels : parts;
+    const signature = JSON.stringify([target, names]);
+    let path = row.querySelector(":scope > .notes-navigation-link");
+    if (path?.dataset.signature === signature) return;
+    path?.remove();
+    path = document.createElement("span");
+    path.className = "notes-navigation-link";
+    path.dataset.signature = signature;
+    path.dataset.searchText = names.join("/");
+    parts.forEach((part, index) => {
+      if (index) path.append(document.createTextNode(" / "));
+      const link = document.createElement("a");
+      const destination = parts.slice(0, index + 1).join("/");
+      link.textContent = names[index];
+      link.href = "#/page/" + encodeURIComponent(destination);
+      link.title = destination;
+      path.append(link);
+    });
+    row.append(path);
+    row.classList.add("notes-navigation-row");
+  };
+
+  const updatePanel = (panel) => {
+    const hierarchy = panel.matches(".page-hierarchy");
+    const list = panel.querySelector(hierarchy ? "ul.namespaces" : "ul");
+    if (!list) return;
+    const page = panel.closest(".page");
+    const current = page?.querySelector(titleSelector)?.getAttribute("data-ref") || "";
+    // The title can mount after the list. Wait rather than hide valid rows.
+    if (hierarchy && !current) return;
+    const name = hierarchy ? "Subpages" : "Tagged pages";
+    list.classList.add("notes-navigation-list");
+    addSearch(panel, name);
+    let count = 0;
+    for (const row of list.children) {
+      if (!row.matches("li")) continue;
+      const refs = row.querySelectorAll("[data-ref]");
+      const ref = hierarchy ? refs[refs.length - 1] : refs[0];
+      const target = ref?.getAttribute("data-ref") || "";
+      const eligible = !!target && (!hierarchy || isDirectChild(current, target));
+      row.classList.toggle("notes-navigation-excluded", !eligible);
+      if (!eligible) continue;
+      count++;
+      if (hierarchy) showLeafLink(row, ref);
+      else showPathLinks(row, ref);
+    }
+    const heading = panel.querySelector(".foldable-title h2");
+    setText(heading, `${count} ${name}`);
+    panel.classList.toggle("notes-navigation-empty", hierarchy && count === 0);
+    filterRows(panel);
+  };
+
+  const observerOptions = {
+    childList: true, subtree: true, characterData: true,
+    attributes: true, attributeFilter: ["data-ref"],
+  };
+  let frame = null;
+  const flush = () => {
+    frame = null;
+    // Our own links and headings must not trigger another refresh.
+    observer.disconnect();
+    try {
+      for (const panel of pendingPanels) {
+        if (panel.isConnected) updatePanel(panel);
+      }
+    } finally {
+      pendingPanels.clear();
+      if (!signal.aborted) observer.observe(document.body, observerOptions);
+    }
+  };
+  const collectPanels = (node) => {
+    const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (!element) return;
+    const panel = element.closest(panelSelector);
+    if (panel) pendingPanels.add(panel);
+    element.querySelectorAll(panelSelector).forEach((panel) => pendingPanels.add(panel));
+    if (element.closest(".ls-page-title") || element.querySelector(".ls-page-title")) {
+      element.closest(".page")?.querySelectorAll(panelSelector)
+        .forEach((panel) => pendingPanels.add(panel));
+    }
+  };
+  const observer = new MutationObserver((changes) => {
+    for (const change of changes) {
+      collectPanels(change.target);
+      change.addedNodes.forEach(collectPanels);
+    }
+    if (pendingPanels.size && frame === null) frame = requestAnimationFrame(flush);
+  });
+  signal.addEventListener("abort", () => {
+    observer.disconnect();
+    if (frame !== null) cancelAnimationFrame(frame);
+    pendingPanels.clear();
+    searchFields.forEach((input) => input.remove());
+    searchFields.clear();
+  }, { once: true });
+  document.querySelectorAll(panelSelector).forEach((panel) => pendingPanels.add(panel));
+  flush();
+})();
+
