@@ -426,6 +426,43 @@ window.notesFeatureEnabled = (key) => {
       attributes: true, attributeFilter: ["data-ref"],
     });
   };
+  const createPathLink = (parts, names, index) => {
+    const link = document.createElement("a");
+    link.textContent = names[index];
+    link.href = "#/page/" + encodeURIComponent(parts.slice(0, index + 1).join("/"));
+    link.title = names.slice(0, index + 1).join(" / ");
+    return link;
+  };
+  const createPathSeparator = () => {
+    const separator = document.createElement("span");
+    separator.className = "notes-header-path-separator";
+    separator.textContent = "/";
+    separator.setAttribute("aria-hidden", "true");
+    return separator;
+  };
+  const createPathDisclosure = (toolbar, parts, names) => {
+    const disclosure = document.createElement("details");
+    disclosure.className = "notes-header-path-overflow";
+    const summary = document.createElement("summary");
+    summary.textContent = "… /";
+    summary.setAttribute("aria-label", "Show parent path");
+    const menu = document.createElement("div");
+    menu.className = "notes-header-path-menu";
+    parts.forEach((part, index) => {
+      if (index) {
+        menu.append(createPathSeparator());
+      }
+      const link = createPathLink(parts, names, index);
+      link.addEventListener("click", () => { disclosure.open = false; }, { signal });
+      menu.append(link);
+    });
+    disclosure.append(summary, menu);
+    disclosure.addEventListener("toggle", () => {
+      if (disclosure.open)
+        menu.style.top = `${toolbar.getBoundingClientRect().bottom + 8}px`;
+    }, { signal });
+    return disclosure;
+  };
   const updateHeaderPath = () => {
     const toolbar = document.querySelector("#head");
     const source = document.querySelector("#main-content-container .ls-page-title .title[data-ref]");
@@ -446,24 +483,31 @@ window.notesFeatureEnabled = (key) => {
     breadcrumb.className = "notes-header-path";
     breadcrumb.dataset.signature = signature;
     breadcrumb.setAttribute("aria-label", "Parent pages");
+    if (parts.length > 1)
+      breadcrumb.append(createPathDisclosure(toolbar, parts, names));
     parts.forEach((part, index) => {
       if (index) {
-        const separator = document.createElement("span");
-        separator.className = "notes-header-path-separator";
-        separator.textContent = "/";
-        separator.setAttribute("aria-hidden", "true");
-        breadcrumb.append(separator);
+        breadcrumb.append(createPathSeparator());
       }
-      const link = document.createElement("a");
+      const link = createPathLink(parts, names, index);
       link.className = "notes-header-path-segment";
       if (index === parts.length - 1) link.classList.add("notes-header-path-parent");
-      link.textContent = names[index];
-      link.href = "#/page/" + encodeURIComponent(parts.slice(0, index + 1).join("/"));
-      link.title = names.slice(0, index + 1).join(" / ");
       breadcrumb.append(link);
     });
     toolbar.insertBefore(breadcrumb, toolbar.querySelector(":scope > .r"));
   };
+  document.addEventListener("pointerdown", (event) => {
+    const disclosure = document.querySelector(".notes-header-path-overflow[open]");
+    if (disclosure && !disclosure.contains(event.target)) disclosure.open = false;
+  }, { signal, capture: true });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const disclosure = document.querySelector(".notes-header-path-overflow[open]");
+    if (disclosure) {
+      disclosure.open = false;
+      disclosure.querySelector("summary").focus();
+    }
+  }, { signal });
   const observer = new MutationObserver((changes) => {
     if (changes.some((change) => {
       const target = change.target.nodeType === Node.ELEMENT_NODE ? change.target : change.target.parentElement;

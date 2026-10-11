@@ -141,6 +141,44 @@ div.flex-1.page.relative > :is(
 #head:has(> .notes-header-path) > .r {
   flex: 0 0 auto;
 }
+.notes-header-path-overflow {
+  display: none;
+  flex-shrink: 0;
+}
+.notes-header-path-overflow > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+.notes-header-path-overflow > summary::-webkit-details-marker {
+  display: none;
+}
+.notes-header-path-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  z-index: 30;
+  max-height: 50vh;
+  overflow: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 6px;
+  background: var(--ls-primary-background-color);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 20%);
+  white-space: normal;
+}
+.notes-header-path-overflow:not([open]) > .notes-header-path-menu {
+  display: none;
+}
+.notes-header-path-menu > a {
+  padding: 0.5rem 0.25rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 @media (max-width: 640px) {
   #head:has(> .notes-header-path) > .l {
     min-width: 0;
@@ -148,14 +186,13 @@ div.flex-1.page.relative > :is(
   }
   .notes-header-path {
     margin: 0 0.35rem;
-    overflow: hidden;
+    overflow: visible;
   }
   .notes-header-path > :not(.notes-header-path-parent) {
     display: none;
   }
-  .notes-header-path:has(> a:nth-of-type(2))::before {
-    content: "… /";
-    flex-shrink: 0;
+  .notes-header-path > .notes-header-path-overflow {
+    display: block;
   }
   .notes-header-path-parent {
     flex-shrink: 1;
