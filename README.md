@@ -93,3 +93,7 @@ The same view can be used for other catalogs.
 
 Add the properties above to enable optional features. Set boolean properties to
 `false` to disable them; their checkboxes update the stored values directly.
+
+## License
+
+[MIT](LICENSE) © 2026 Siarhei Homan.
