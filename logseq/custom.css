@@ -368,8 +368,7 @@ div.flex-1.page.relative > :is(
   color: var(--ls-secondary-text-color);
 }
 .notes-global-navigation .notes-contents-shortcut svg,
-.notes-global-navigation .notes-favorites-star,
-.notes-global-navigation .notes-favorites-separator {
+.notes-global-navigation .notes-favorites-star {
   color: var(--ls-secondary-text-color);
 }
 .notes-global-navigation > .notes-favorites {
@@ -438,8 +437,23 @@ div.flex-1.page.relative > :is(
   max-width: 100%;
   overflow-wrap: break-word;
 }
-.notes-favorites-separator {
-  margin-left: 0.5rem;
+.notes-favorite-drag-handle {
+  border: 0;
+  padding: 0 0.2rem 0 0;
+  background: transparent;
+  color: var(--ls-secondary-text-color);
+  font: inherit;
+  cursor: grab;
+  touch-action: none;
+}
+.notes-favorite-drag-handle:active {
+  cursor: grabbing;
+}
+.notes-favorite-drop-before {
+  box-shadow: -2px 0 var(--ls-link-text-color);
+}
+.notes-favorite-drop-after {
+  box-shadow: 2px 0 var(--ls-link-text-color);
 }
 /* Shared query catalog; field selection and visibility belong to the query. */
 .notes-catalog {

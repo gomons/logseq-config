@@ -352,6 +352,54 @@ window.notesFeatureEnabled = (key) => {
   let graph = null;
   let busy = false;
   let favoritesOpen = false;
+  let drag = null;
+  let savingOrder = false;
+  const clearDropIndicator = () => {
+    panel?.querySelectorAll(".notes-favorite-drop-before, .notes-favorite-drop-after")
+      .forEach((item) => item.classList.remove("notes-favorite-drop-before", "notes-favorite-drop-after"));
+  };
+  const clearDrag = () => {
+    clearDropIndicator();
+    drag = null;
+  };
+  const markTarget = (item, x) => {
+    if (!drag) return;
+    clearDropIndicator();
+    if (!item || item.dataset.favorite === drag.name) {
+      drag.target = null;
+      return;
+    }
+    const bounds = item.getBoundingClientRect();
+    drag.target = item.dataset.favorite;
+    drag.after = x > bounds.left + bounds.width / 2;
+    item.classList.add(drag.after ? "notes-favorite-drop-after" : "notes-favorite-drop-before");
+  };
+  const saveOrder = async () => {
+    const move = drag;
+    clearDrag();
+    const api = window.logseq?.api;
+    if (!move?.target || savingOrder || move.graph !== currentGraph() || !api?.set_current_graph_configs) return;
+    savingOrder = true;
+    try {
+      const names = [...await api.get_current_graph_favorites()];
+      if (signal.aborted || move.graph !== currentGraph()) return;
+      const from = names.indexOf(move.name);
+      if (from < 0 || !names.includes(move.target)) return;
+      const originalOrder = JSON.stringify(names);
+      names.splice(from, 1);
+      names.splice(names.indexOf(move.target) + (move.after ? 1 : 0), 0, move.name);
+      if (JSON.stringify(names) === originalOrder) return;
+      await api.set_current_graph_configs({ favorites: names });
+      if (signal.aborted || move.graph !== currentGraph()) return;
+      const entries = new Map(favorites.map((entry) => [entry.name, entry]));
+      favorites = names.map((name) => entries.get(name) || { name, label: name });
+      signature = JSON.stringify([move.graph, names]);
+      render();
+    } catch (error) {
+      console.warn("Favorites order:", error);
+      if (panel) panel.title = "Could not save Favorites order";
+    } finally { savingOrder = false; }
+  };
   const measured = new Set();
   const resizeObserver = window.ResizeObserver
     ? new window.ResizeObserver(() => render()) : null;
@@ -462,27 +510,56 @@ window.notesFeatureEnabled = (key) => {
         paint();
       }, { signal });
       paint();
-      favorites.forEach(({ name, label }, index) => {
+      favorites.forEach(({ name, label }) => {
         const item = document.createElement("span");
         item.className = "notes-favorites-item";
+        item.dataset.favorite = name;
+        if (window.logseq?.api?.set_current_graph_configs) {
+          item.draggable = true;
+          const handle = document.createElement("button");
+          handle.type = "button";
+          handle.className = "notes-favorite-drag-handle";
+          handle.textContent = "⠿";
+          handle.setAttribute("aria-label", `Reorder ${label}`);
+          handle.title = "Drag to reorder";
+          handle.addEventListener("pointerdown", (event) => {
+            if (event.button !== 0 || savingOrder) return;
+            event.preventDefault();
+            drag = { name, graph: currentGraph(), pointerId: event.pointerId };
+            handle.setPointerCapture?.(event.pointerId);
+          }, { signal });
+          item.append(handle);
+          item.addEventListener("dragstart", (event) => {
+            if (savingOrder) { event.preventDefault(); return; }
+            drag = { name, graph: currentGraph() };
+            event.dataTransfer?.setData("text/plain", name);
+            if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+          }, { signal });
+          item.addEventListener("dragover", (event) => {
+            if (!drag) return;
+            event.preventDefault();
+            markTarget(item, event.clientX);
+          }, { signal });
+          item.addEventListener("drop", (event) => {
+            if (!drag) return;
+            event.preventDefault();
+            void saveOrder();
+          }, { signal });
+          item.addEventListener("dragend", clearDrag, { signal });
+        }
         const link = document.createElement("a");
         link.textContent = label.split("/").pop();
         link.href = "#/page/" + encodeURIComponent(name);
+        link.draggable = false;
         link.title = label;
         item.append(link);
-        if (index < favorites.length - 1) {
-          const separator = document.createElement("span");
-          separator.className = "notes-favorites-separator";
-          separator.textContent = "\u00a0·";
-          separator.setAttribute("aria-hidden", "true");
-          item.append(separator);
-        }
         nav.append(item);
       });
       panel.append(toggle, nav);
     }
   };
   const refresh = async () => {
+    if (drag || savingOrder) return;
     render();
     const api = window.logseq?.api;
     if (busy || !api?.get_current_graph_favorites || !window.notesFeatureEnabled("notes/favorites?")) return;
@@ -520,12 +597,25 @@ window.notesFeatureEnabled = (key) => {
   observer.observe(document.body, {
     childList: true, subtree: true, attributes: true, attributeFilter: ["data-ref"],
   });
+  document.addEventListener("pointermove", (event) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const item = document.elementFromPoint(event.clientX, event.clientY)?.closest(".notes-favorites-item");
+    markTarget(item && panel?.contains(item) ? item : null, event.clientX);
+  }, { signal });
+  document.addEventListener("pointerup", (event) => {
+    if (drag?.pointerId === event.pointerId) void saveOrder();
+  }, { signal });
+  document.addEventListener("pointercancel", clearDrag, { signal });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") clearDrag();
+  }, { signal });
   const timer = setInterval(refresh, 1000);
   window.addEventListener("hashchange", refresh, { signal });
   window.addEventListener("resize", render, { signal });
   signal.addEventListener("abort", () => {
     observer.disconnect();
     clearInterval(timer);
+    clearDrag();
     removePanel();
   }, { once: true });
   void refresh();

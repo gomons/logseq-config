@@ -9,6 +9,7 @@ require adjustments. Database graphs are not supported.
 
 - Favorites and a Contents shortcut below the toolbar, outside page scrolling.
 - Favorites expand into a list; the panel shows the full clickable page path.
+- Drag Favorites to reorder them; the order is saved in the graph configuration.
 - Short page titles with clickable parent paths, including a mobile path popup.
 - Search for Subpages, Tagged pages, and Linked References, arranged below page
   content.
