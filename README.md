@@ -36,6 +36,17 @@ Set `favorites?` or `contents-shortcut?` to `false` to hide those links. Set
 `hide-unlinked-references?` to `false` to show Unlinked References. These custom
 options default to `true`.
 
+Favorites and the Contents shortcut can also be configured per device:
+
+```clojure
+:notes/desktop {:favorites? false :contents-shortcut? false}
+:notes/mobile {:favorites? true :contents-shortcut? true}
+```
+
+Device values override the shared settings. Omitted keys use the shared value.
+Phones and tablets use `:notes/mobile`; desktop uses `:notes/desktop`.
+Window width does not affect this. Both sections live in the same synced file.
+
 Logseq's built-in `:ui/enable-tooltip?` controls hover previews; set it to
 `true` to restore them. Each option works independently. Reload after changes.
 

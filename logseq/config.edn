@@ -4,6 +4,11 @@
  :notes/favorites? true
  :notes/contents-shortcut? true
 
+ ;; Device overrides for Favorites and the Contents shortcut.
+ ;; Omit a key to use its shared setting above.
+ :notes/desktop {:favorites? true :contents-shortcut? true}
+ :notes/mobile {:favorites? true :contents-shortcut? true}
+
  ;; Hide Unlinked References. Set to false to show the native section.
  :notes/hide-unlinked-references? true
 
