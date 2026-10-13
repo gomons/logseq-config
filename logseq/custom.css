@@ -354,10 +354,20 @@ div.flex-1.page.relative > :is(
   overflow-wrap: anywhere;
 }
 
-/* Favorites wrap around Contents, then use the full width below it. */
+/* Contents and Favorites form a separate navigation panel above the title. */
 .notes-page-navigation {
-  display: flow-root;
-  margin-bottom: 0.25rem;
+  --notes-navigation-icon-width: 1.2rem;
+  --notes-navigation-gap: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--notes-navigation-gap);
+  box-sizing: border-box;
+  padding: 0.5rem 0.65rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 6px;
+  background: var(--ls-secondary-background-color);
 }
 .notes-page-navigation + :has(> :is(.ls-page-title, .journal-title)),
 .notes-page-navigation + * > :is(.ls-page-title, .journal-title) {
@@ -369,6 +379,10 @@ div.flex-1.page.relative > :is(
 }
 .notes-page-navigation > .notes-favorites {
   display: block;
+  position: relative;
+  box-sizing: border-box;
+  padding-left: calc(var(--notes-navigation-icon-width) + var(--notes-navigation-gap));
+  width: 100%;
   min-width: 0;
   margin: 0;
   overflow-wrap: break-word;
@@ -377,19 +391,34 @@ div.flex-1.page.relative > :is(
 .notes-page-navigation > .notes-favorites > :not(:last-child) {
   margin-right: 0.5rem;
 }
+.notes-page-navigation > .notes-favorites > .notes-favorites-star {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--notes-navigation-icon-width);
+  height: 1.4em;
+  margin: 0;
+}
 .notes-page-navigation > .notes-favorites > a {
   white-space: nowrap;
   overflow-wrap: normal;
   word-break: normal;
 }
 .notes-page-navigation > .notes-contents-shortcut {
-  float: right;
+  display: grid;
+  grid-template-columns: var(--notes-navigation-icon-width) auto;
+  column-gap: var(--notes-navigation-gap);
+  align-self: flex-start;
   color: var(--ls-link-text-color);
   min-height: 0;
-  margin: 0 0 0 1rem;
+  margin: 0;
   padding: 0;
 }
 .notes-page-navigation > .notes-contents-shortcut svg {
+  justify-self: center;
   color: var(--ls-secondary-text-color);
 }
 
@@ -410,15 +439,6 @@ div.flex-1.page.relative > :is(
   color: var(--ls-secondary-text-color);
 }
 @media (max-width: 640px) {
-  .notes-page-navigation > .notes-contents-shortcut {
-    float: none;
-    display: flex;
-    width: fit-content;
-    margin: 0 0 0.5rem;
-  }
-  .notes-page-navigation > .notes-favorites {
-    clear: both;
-  }
   .notes-favorites {
     margin-left: 0;
   }
