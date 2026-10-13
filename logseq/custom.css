@@ -349,11 +349,14 @@ div.flex-1.page.relative > :is(
   box-sizing: border-box;
   padding: 0.5rem 0.65rem;
   margin: 0.35rem 0 0.5rem;
-  border-bottom: 1px solid var(--ls-border-color);
   background: var(--ls-secondary-background-color);
   font-size: 0.8rem;
   line-height: 1.4;
   -webkit-app-region: no-drag;
+}
+:is(.light-theme, .white-theme, [data-theme="light"]) .notes-global-navigation {
+  background: color-mix(in srgb,
+    var(--ls-secondary-background-color) 94%, var(--ls-primary-text-color) 6%);
 }
 #left-container:has(> .notes-global-navigation) > #main-container {
   min-height: 0;
