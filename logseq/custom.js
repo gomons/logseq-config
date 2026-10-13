@@ -1659,7 +1659,12 @@ window.notesSubtreeSearch = new AbortController();
       return;
     }
     for (const [control, state] of controls) {
-      if (!control.isConnected) {
+      // React can update the task text while retaining our inserted control.
+      // Rebuild it when native rendering restores the marker or replaces text.
+      if (!control.isConnected || !state.text.isConnected ||
+          !control.querySelector('input[type="checkbox"]') ||
+          prefix.test(state.text.textContent)) {
+        control.remove();
         if (state.addedClass) state.title.classList.remove(state.className);
         controls.delete(control);
       }
