@@ -338,187 +338,200 @@ window.notesFeatureEnabled = (key) => {
   schedule();
 })();
 
-/* Open Contents from page and journal headings. */
+/* Keep Contents and Favorites below the toolbar, outside page scrolling. */
 (() => {
   window.notesContentsShortcut?.abort();
+  window.notesFavorites?.abort();
+  window.notesGlobalNavigation?.abort();
   const controller = new AbortController();
-  window.notesContentsShortcut = controller;
+  window.notesGlobalNavigation = controller;
   const { signal } = controller;
-  const headings = ".ls-page-title, .journal-title, .sidebar-item-header > button[aria-controls]";
-  const links = new Set();
-  let frame = null;
-  const refresh = () => {
-    frame = null;
-    observer.disconnect();
-    document.querySelectorAll(headings).forEach((heading) => {
-      const host = heading.parentElement;
-      const main = heading.matches(".ls-page-title, .journal-title") && heading.closest("#main-content-container");
-      let row = main && host.previousElementSibling?.matches(".notes-page-navigation")
-        ? host.previousElementSibling : null;
-      const existing = (row || host).querySelector(":scope > .notes-contents-shortcut");
-      const name = heading.getAttribute("data-ref") ||
-        heading.querySelector("[data-ref]")?.getAttribute("data-ref") || heading.textContent.trim();
-      if (!window.notesFeatureEnabled("notes/contents-shortcut?") || name.toLowerCase() === "contents") {
-        existing?.remove();
-        return;
+  let panel = null;
+  let favorites = [];
+  let signature = null;
+  let graph = null;
+  let busy = false;
+  let favoritesOpen = false;
+  const measured = new Set();
+  const resizeObserver = window.ResizeObserver
+    ? new window.ResizeObserver(() => render()) : null;
+  const removePanel = () => {
+    panel?.remove();
+    panel = null;
+    resizeObserver?.disconnect();
+    measured.clear();
+  };
+  const alignPanel = () => {
+    const scroll = document.querySelector("#main-content-container");
+    const content = scroll?.querySelector(".journal-item, .page") ||
+      scroll?.querySelector(".cp__sidebar-main-content") || scroll;
+    const parent = panel?.parentElement;
+    if (!content || !parent) return;
+    const targets = new Set([scroll, content, parent].filter(Boolean));
+    for (const node of measured) {
+      if (!targets.has(node)) {
+        resizeObserver?.unobserve(node);
+        measured.delete(node);
       }
-      if (existing) {
-        if (main && row && row.firstElementChild !== existing) row.prepend(existing);
-        return;
+    }
+    for (const node of targets) {
+      if (!measured.has(node)) {
+        resizeObserver?.observe(node);
+        measured.add(node);
       }
+    }
+    const bounds = content.getBoundingClientRect();
+    const outer = parent.getBoundingClientRect();
+    if (!bounds.width || !outer.width) return;
+    const left = `${Math.max(0, bounds.left - outer.left)}px`;
+    const right = `${Math.max(0, outer.right - bounds.right)}px`;
+    if (panel.style.marginLeft !== left) panel.style.marginLeft = left;
+    if (panel.style.marginRight !== right) panel.style.marginRight = right;
+  };
+  const currentGraph = () => window.logseq?.api?.get_state_from_store?.("git/current-repo");
+  const render = () => {
+    if (signal.aborted) return;
+    const header = document.querySelector("#head");
+    if (!header) { removePanel(); return; }
+    const title = document.querySelector("#main-content-container .ls-page-title");
+    const pageName = title?.getAttribute("data-ref") ||
+      title?.querySelector("[data-ref]")?.getAttribute("data-ref") || "";
+    const showPath = !!pageName;
+    const showContents = window.notesFeatureEnabled("notes/contents-shortcut?");
+    const showFavorites = window.notesFeatureEnabled("notes/favorites?") &&
+      graph === currentGraph() && favorites.length > 0;
+    if (!showContents && !showFavorites && !showPath) { removePanel(); return; }
+    if (!panel?.isConnected) {
+      panel = document.createElement("nav");
+      panel.className = "notes-global-navigation";
+      panel.setAttribute("aria-label", "Quick navigation");
+      for (const type of ["pointerdown", "mousedown", "touchstart", "click"])
+        panel.addEventListener(type, (event) => event.stopPropagation(), { signal });
+    }
+    if (header.nextElementSibling !== panel) header.after(panel);
+    alignPanel();
+    window.notesUpdateParentPath?.();
+    const key = JSON.stringify([showContents, showFavorites, signature]);
+    if (panel.dataset.signature === key) return;
+    panel.dataset.signature = key;
+    const breadcrumb = panel.querySelector(".notes-header-path");
+    panel.replaceChildren(...(breadcrumb ? [breadcrumb] : []));
+    if (showContents) {
       const link = document.createElement("a");
       link.className = "notes-contents-shortcut";
       link.href = "#/page/contents";
       link.title = "Open Contents";
       link.setAttribute("aria-label", "Open Contents");
       link.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg><span>Contents</span>';
-      for (const type of ["pointerdown", "mousedown", "click"])
-        link.addEventListener(type, (event) => event.stopPropagation(), { signal });
-      if (main) {
-        if (!row) {
-          row = document.createElement("div");
-          row.className = "notes-page-navigation";
-          host.before(row);
-        }
-        row.prepend(link);
-      } else heading.insertAdjacentElement("afterend", link);
-      links.add(link);
-    });
-    for (const link of links) if (!link.isConnected) links.delete(link);
-    if (!signal.aborted) observer.observe(document.body, {
-      childList: true, subtree: true, characterData: true,
-      attributes: true, attributeFilter: ["data-ref"],
-    });
-  };
-  const observer = new MutationObserver((changes) => {
-    if (changes.some((change) =>
-      (change.target.nodeType === Node.ELEMENT_NODE ? change.target : change.target.parentElement)
-        ?.closest(headings) || [...change.addedNodes].some((node) =>
-      node.nodeType === Node.ELEMENT_NODE &&
-      (node.matches(headings) || node.querySelector(headings)))) && frame === null)
-      frame = requestAnimationFrame(refresh);
-  });
-  signal.addEventListener("abort", () => {
-    observer.disconnect();
-    if (frame !== null) cancelAnimationFrame(frame);
-    links.forEach((link) => link.remove());
-    links.clear();
-  }, { once: true });
-  refresh();
-})();
-
-/* Show graph Favorites above page and journal headings. */
-(() => {
-  window.notesFavorites?.abort();
-  const controller = new AbortController();
-  window.notesFavorites = controller;
-  const { signal } = controller;
-  const panels = new Map();
-  const headingSelector =
-    "#main-content-container .ls-page-title, #main-content-container .journal-title";
-  const removePanel = (host) => {
-    panels.get(host)?.remove();
-    panels.delete(host);
-  };
-  let busy = false;
-  let signature = null;
-  let favorites = [];
-  const render = () => {
-    if (signal.aborted) return;
-    for (const heading of document.querySelectorAll(headingSelector)) {
-      const host = heading.parentElement;
-      let nav = panels.get(host);
-      if (!window.notesFeatureEnabled("notes/favorites?") || !favorites.length) {
-        removePanel(host);
-        continue;
-      }
-      if (!nav || !nav.isConnected) {
-        nav = document.createElement("nav");
-        nav.className = "notes-favorites";
-        nav.setAttribute("aria-label", "Favorites");
-        for (const type of ["pointerdown", "mousedown", "touchstart", "click"])
-          nav.addEventListener(type, (event) => event.stopPropagation(), { signal });
-        let row = host.previousElementSibling;
-        if (!row?.matches(".notes-page-navigation")) {
-          row = document.createElement("div");
-          row.className = "notes-page-navigation";
-          host.before(row);
-        }
-        row.append(nav);
-        panels.set(host, nav);
-      }
-      const shortcut = nav.parentElement.querySelector(":scope > .notes-contents-shortcut");
-      if (shortcut && nav.parentElement.firstElementChild !== shortcut)
-        nav.parentElement.prepend(shortcut);
-      if (nav.dataset.signature === signature) continue;
-      nav.dataset.signature = signature;
-      const nodes = [];
+      panel.append(link);
+    }
+    if (showFavorites) {
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "notes-favorites-toggle";
+      toggle.setAttribute("aria-controls", "notes-global-favorites");
+      const nav = document.createElement("div");
+      nav.id = "notes-global-favorites";
+      nav.className = "notes-favorites";
+      nav.setAttribute("aria-label", "Favorites");
       const star = document.createElement("span");
       star.className = "notes-favorites-star";
       star.textContent = "★";
       star.setAttribute("aria-hidden", "true");
-      nodes.push(star);
+      const label = document.createElement("span");
+      label.textContent = `Favorites · ${favorites.length}`;
+      const arrow = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      arrow.setAttribute("class", "notes-favorites-arrow");
+      arrow.setAttribute("viewBox", "0 0 24 24");
+      arrow.setAttribute("fill", "none");
+      arrow.setAttribute("stroke", "currentColor");
+      arrow.setAttribute("stroke-width", "2");
+      arrow.setAttribute("stroke-linecap", "round");
+      arrow.setAttribute("stroke-linejoin", "round");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "M6 9l6 6 6-6");
+      arrow.append(path);
+      arrow.setAttribute("aria-hidden", "true");
+      toggle.append(star, label, arrow);
+      const paint = () => {
+        nav.hidden = !favoritesOpen;
+        toggle.setAttribute("aria-expanded", String(favoritesOpen));
+      };
+      toggle.addEventListener("click", () => {
+        favoritesOpen = !favoritesOpen;
+        paint();
+      }, { signal });
+      paint();
       favorites.forEach(({ name, label }, index) => {
-        if (index) {
-          const separator = document.createElement("span");
-          separator.textContent = "·";
-          separator.setAttribute("aria-hidden", "true");
-          nodes.push(separator);
-        }
+        const item = document.createElement("span");
+        item.className = "notes-favorites-item";
         const link = document.createElement("a");
         link.textContent = label.split("/").pop();
         link.href = "#/page/" + encodeURIComponent(name);
         link.title = label;
-        nodes.push(link);
+        item.append(link);
+        if (index < favorites.length - 1) {
+          const separator = document.createElement("span");
+          separator.className = "notes-favorites-separator";
+          separator.textContent = "\u00a0·";
+          separator.setAttribute("aria-hidden", "true");
+          item.append(separator);
+        }
+        nav.append(item);
       });
-      nav.replaceChildren(...nodes);
-    }
-    for (const host of panels.keys()) {
-      if (!host.isConnected) removePanel(host);
+      panel.append(toggle, nav);
     }
   };
   const refresh = async () => {
+    render();
     const api = window.logseq?.api;
-    if (busy || !api?.get_current_graph_favorites) return;
+    if (busy || !api?.get_current_graph_favorites || !window.notesFeatureEnabled("notes/favorites?")) return;
     busy = true;
+    const requestedGraph = currentGraph();
     try {
       const names = [...new Set(await api.get_current_graph_favorites())]
         .filter((name) => typeof name === "string" && name.trim());
-      const next = JSON.stringify([await api.get_current_graph?.(), names]);
+      const next = JSON.stringify([requestedGraph, names]);
       if (next !== signature) {
-        favorites = await Promise.all(names.map(async (name) => {
+        const entries = await Promise.all(names.map(async (name) => {
           const page = await api.get_page(name);
           return { name, label: page?.originalName || page?.["original-name"] || name };
         }));
+        if (signal.aborted || requestedGraph !== currentGraph()) return;
+        if (graph !== requestedGraph) favoritesOpen = false;
+        favorites = entries;
+        graph = requestedGraph;
         signature = next;
       }
-      if (signal.aborted) return;
       render();
     } catch (error) {
-      console.warn("Favorites:", error);
-    } finally {
-      busy = false;
-    }
+      console.warn("Quick navigation:", error);
+    } finally { busy = false; }
   };
-  // Reuse cached Favorites as soon as Logseq mounts a new heading.
   const observer = new MutationObserver((changes) => {
-    const headingChanged = changes.some(({ addedNodes, removedNodes }) =>
-      [...addedNodes, ...removedNodes].some((node) =>
-        node.nodeType === 1 &&
-        (node.matches(headingSelector) || node.querySelector(headingSelector))));
-    if (headingChanged) render();
+    if (changes.some(({ target, addedNodes, removedNodes }) => {
+      const element = target.nodeType === 1 ? target : target.parentElement;
+      if (element?.closest(".notes-global-navigation")) return false;
+      return element?.closest("#head, .ls-page-title") ||
+        [...addedNodes, ...removedNodes].some((node) => node.nodeType === 1 &&
+          (node.matches("#head, .ls-page-title") || node.querySelector("#head, .ls-page-title")));
+    })) render();
   });
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.body, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ["data-ref"],
+  });
   const timer = setInterval(refresh, 1000);
+  window.addEventListener("hashchange", refresh, { signal });
+  window.addEventListener("resize", render, { signal });
   signal.addEventListener("abort", () => {
     observer.disconnect();
     clearInterval(timer);
-    for (const host of panels.keys()) removePanel(host);
+    removePanel();
   }, { once: true });
-  refresh();
+  void refresh();
 })();
 
-/* Show leaf page titles and clickable parent namespaces in the toolbar. */
+/* Show leaf page titles and clickable parent namespaces in the navigation panel. */
 (() => {
   window.notesPageHeadings?.abort();
   const controller = new AbortController();
@@ -556,7 +569,7 @@ window.notesFeatureEnabled = (key) => {
       original.insertAdjacentElement("afterend", title);
       heading.classList.add("notes-has-namespace-title");
     });
-    updateHeaderPath();
+    updateParentPath();
     if (!signal.aborted) observer.observe(document.body, {
       childList: true, subtree: true, characterData: true,
       attributes: true, attributeFilter: ["data-ref"],
@@ -576,7 +589,7 @@ window.notesFeatureEnabled = (key) => {
     separator.setAttribute("aria-hidden", "true");
     return separator;
   };
-  const createPathDisclosure = (toolbar, parts, names) => {
+  const createPathDisclosure = (parts, names) => {
     const disclosure = document.createElement("details");
     disclosure.className = "notes-header-path-overflow";
     const summary = document.createElement("summary");
@@ -595,16 +608,16 @@ window.notesFeatureEnabled = (key) => {
     disclosure.append(summary, menu);
     disclosure.addEventListener("toggle", () => {
       if (disclosure.open)
-        menu.style.top = `${toolbar.getBoundingClientRect().bottom + 8}px`;
+        menu.style.top = `${summary.getBoundingClientRect().bottom + 8}px`;
     }, { signal });
     return disclosure;
   };
-  const updateHeaderPath = () => {
-    const toolbar = document.querySelector("#head");
+  const updateParentPath = () => {
+    const toolbar = document.querySelector(".notes-global-navigation");
     const source = document.querySelector("#main-content-container .ls-page-title .title[data-ref]");
     const path = source?.getAttribute("data-ref") || "";
     const old = document.querySelector(".notes-header-path");
-    if (!toolbar || !path.includes("/")) {
+    if (!toolbar || !path) {
       old?.remove();
       return;
     }
@@ -612,26 +625,33 @@ window.notesFeatureEnabled = (key) => {
     const signature = JSON.stringify([path, label]);
     if (old?.dataset.signature === signature && old.parentElement === toolbar) return;
     old?.remove();
-    const parts = path.split("/").slice(0, -1);
+    const parts = path.split("/");
     const labels = label.split("/");
-    const names = labels.length === parts.length + 1 ? labels.slice(0, -1) : parts;
+    const names = labels.length === parts.length ? labels : parts;
     const breadcrumb = document.createElement("nav");
     breadcrumb.className = "notes-header-path";
     breadcrumb.dataset.signature = signature;
-    breadcrumb.setAttribute("aria-label", "Parent pages");
-    if (parts.length > 1)
-      breadcrumb.append(createPathDisclosure(toolbar, parts, names));
+    breadcrumb.setAttribute("aria-label", "Page path");
+    if (parts.length > 2)
+      breadcrumb.append(createPathDisclosure(parts.slice(0, -2), names.slice(0, -2)));
     parts.forEach((part, index) => {
       if (index) {
-        breadcrumb.append(createPathSeparator());
+        const separator = createPathSeparator();
+        if (index === parts.length - 1) separator.classList.add("notes-header-path-last-separator");
+        breadcrumb.append(separator);
       }
       const link = createPathLink(parts, names, index);
       link.className = "notes-header-path-segment";
-      if (index === parts.length - 1) link.classList.add("notes-header-path-parent");
+      if (index === parts.length - 2) link.classList.add("notes-header-path-parent");
+      if (index === parts.length - 1) {
+        link.classList.add("notes-header-path-current");
+        link.setAttribute("aria-current", "page");
+      }
       breadcrumb.append(link);
     });
-    toolbar.insertBefore(breadcrumb, toolbar.querySelector(":scope > .r"));
+    toolbar.prepend(breadcrumb);
   };
+  window.notesUpdateParentPath = updateParentPath;
   document.addEventListener("pointerdown", (event) => {
     const disclosure = document.querySelector(".notes-header-path-overflow[open]");
     if (disclosure && !disclosure.contains(event.target)) disclosure.open = false;
@@ -654,6 +674,7 @@ window.notesFeatureEnabled = (key) => {
   signal.addEventListener("abort", () => {
     observer.disconnect();
     if (frame !== null) cancelAnimationFrame(frame);
+    if (window.notesUpdateParentPath === updateParentPath) delete window.notesUpdateParentPath;
     document.querySelector(".notes-header-path")?.remove();
     document.querySelectorAll(".notes-namespace-title").forEach((title) => title.remove());
     document.querySelectorAll(".notes-has-namespace-title").forEach((heading) =>

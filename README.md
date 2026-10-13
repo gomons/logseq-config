@@ -7,7 +7,8 @@ require adjustments. Database graphs are not supported.
 
 ## Features
 
-- Favorites and a Contents shortcut above page headings.
+- Favorites and a Contents shortcut below the toolbar, outside page scrolling.
+- Favorites expand into a list; the panel shows the full clickable page path.
 - Short page titles with clickable parent paths, including a mobile path popup.
 - Search for Subpages, Tagged pages, and Linked References, arranged below page
   content.
