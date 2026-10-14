@@ -506,3 +506,52 @@ div.flex-1.page.relative > :is(
   opacity: 1;
   cursor: wait;
 }
+
+/* A page Favorite action stays beside the title in both themes. */
+.ls-page-title h1:has(> .notes-page-favorite) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+.ls-page-title h1:has(> .notes-page-favorite) > :is(
+  .page-title-sizer-wrapper, .title, .notes-namespace-title
+) {
+  flex: 0 1 auto;
+  min-width: 0;
+  width: auto;
+}
+.notes-page-favorite {
+  display: inline-flex;
+  vertical-align: middle;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  margin: 0;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--ls-secondary-text-color);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-app-region: no-drag;
+}
+.notes-page-favorite svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+}
+.notes-page-favorite[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+.notes-page-favorite:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+.notes-page-favorite:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 2px;
+}
