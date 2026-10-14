@@ -61,8 +61,8 @@ window.notesFeatureEnabled = (key) => {
       .every((term) => text.includes(term));
   };
 
-  // Tagged pages exposes its native fold handler only on the arrow.
-  document.addEventListener("mousedown", (event) => {
+  // Click also covers touch taps; the native fold handler lives on the arrow.
+  document.addEventListener("click", (event) => {
     if (event.button !== 0) return;
     const title = event.target.closest?.(".references.page-tags .foldable-title");
     if (!title || title.matches(".cursor") || event.target.closest("a, button, input")) return;
@@ -146,7 +146,7 @@ window.notesFeatureEnabled = (key) => {
     path.className = "notes-navigation-link";
     path.dataset.signature = signature;
     path.dataset.searchText = names.join("/");
-    parts.forEach((part, index) => {
+    parts.forEach((_, index) => {
       if (index) path.append(document.createTextNode(" / "));
       const link = document.createElement("a");
       const destination = parts.slice(0, index + 1).join("/");
@@ -340,7 +340,6 @@ window.notesFeatureEnabled = (key) => {
 
 /* Keep the Contents shortcut above the page in the native toolbar. */
 (() => {
-  window.notesContentsShortcut?.abort();
   window.notesGlobalNavigation?.abort();
   const controller = new AbortController();
   window.notesGlobalNavigation = controller;
@@ -476,7 +475,7 @@ window.notesFeatureEnabled = (key) => {
     summary.setAttribute("aria-label", "Show parent path");
     const menu = document.createElement("div");
     menu.className = "notes-header-path-menu";
-    parts.forEach((part, index) => {
+    parts.forEach((_, index) => {
       if (index) {
         menu.append(createPathSeparator());
       }
@@ -513,7 +512,7 @@ window.notesFeatureEnabled = (key) => {
     breadcrumb.setAttribute("aria-label", "Page path");
     if (parts.length > 1)
       breadcrumb.append(createPathDisclosure(parts.slice(0, -1), names.slice(0, -1)));
-    parts.forEach((part, index) => {
+    parts.forEach((_, index) => {
       if (index) {
         const separator = createPathSeparator();
         breadcrumb.append(separator);
@@ -1024,7 +1023,7 @@ window.notesSubtreeSearch = new AbortController();
           { signal },
         );
       }
-      for (const [host, state] of states) {
+      for (const state of states.values()) {
         if (!enabled.has(state.uuid)) {
           removeState(state);
         }
@@ -1096,7 +1095,7 @@ window.notesSubtreeSearch = new AbortController();
   let timer = null;
   let running = false;
   let rerun = false;
-  const query = `[:find (pull ?page [:block/name :block/original-name :block/properties
+  const query = `[:find (pull ?page [:block/name :block/original-name
                     {:block/namespace [:block/name]} {:block/tags [:block/name]}])
                   :where [?page :block/name]]`;
   const field = (entity, key) => entity?.[key] ?? entity?.[`block/${key}`];
@@ -1227,7 +1226,6 @@ window.notesSubtreeSearch = new AbortController();
         label: field(page, "original-name") || field(page, "name"),
         parent: field(field(page, "namespace"), "name"),
         tags: (field(page, "tags") || []).map((tag) => field(tag, "name")),
-        properties: field(page, "properties") || {},
       })).sort((a, b) => a.name.localeCompare(b.name));
       const blockRows = await api.datascript_query(blockQuery);
       const candidates = (blockRows || []).map(([block]) => ({
@@ -1245,7 +1243,7 @@ window.notesSubtreeSearch = new AbortController();
       const favorites = favoriteNames.filter((name) => typeof name === "string" && name.trim())
         .map((name) => ({ name, label: pageLabels.get(name.toLowerCase()) || name }));
       const favoriteSignature = JSON.stringify(favorites);
-      const treeSignature = JSON.stringify(pages.map(({ properties, ...page }) => page));
+      const treeSignature = JSON.stringify(pages);
       const tagSignature = JSON.stringify(tags);
       const active = new Set();
       for (const { uuid, options } of candidates) {

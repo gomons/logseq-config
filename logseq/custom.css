@@ -307,7 +307,7 @@ div.flex-1.page.relative > :is(
   display: none;
 }
 
-/* Native Contents query: a wrapping cloud weighted by referencing blocks. */
+/* Explicit hashtags form a cloud weighted by referencing blocks. */
 .notes-tag-cloud {
   display: flex;
   flex-wrap: wrap;
