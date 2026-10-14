@@ -370,8 +370,12 @@ window.notesFeatureEnabled = (key) => {
     toolbarIcons.hidden = contentsLink.hidden && !pageName.includes("/");
     const bounds = header.getBoundingClientRect();
     const content = document.querySelector("#main-content-container")?.getBoundingClientRect();
-    const controls = header.querySelector(".l")?.getBoundingClientRect();
-    const left = `${Math.max(content?.left || bounds.left, controls?.right || bounds.left) - bounds.left + 8}px`;
+    // Native header groups reserve extra space on mobile; use visible controls.
+    const leftControls = [...header.querySelectorAll(".l button, .l a.button")]
+      .map((element) => element.getBoundingClientRect())
+      .filter((rect) => rect.width > 0);
+    const controlsRight = Math.max(bounds.left, ...leftControls.map((rect) => rect.right));
+    const left = `${Math.max(content?.left ?? bounds.left, controlsRight) - bounds.left + 8}px`;
     if (toolbarIcons.style.left !== left) toolbarIcons.style.left = left;
     // The native right container fills all free space; measure its controls.
     const navigation = [...header.querySelector(".r")?.children || []]
