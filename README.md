@@ -18,7 +18,7 @@ require adjustments. Database graphs are not supported.
 - Collapsible Contents trees, tag clouds, and Favorites lists via block
   properties.
 - Block search and checklist filters: All, Unchecked, and Checked.
-- `CHECK` / `CHECKED` rendered as interactive checkboxes.
+- `CHECK` / `CHECKED` rendered as interactive checkboxes with a distinct color.
 - Boolean properties displayed as checkboxes, including in reading mode.
 - Reading mode prevents text editing while preserving navigation, folding, and
   checkboxes.

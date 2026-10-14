@@ -555,3 +555,16 @@ div.flex-1.page.relative > :is(
   outline: 2px solid var(--ls-link-text-color);
   outline-offset: 2px;
 }
+
+/* Distinguish CHECK checklists from native TODO tasks in both themes. */
+.notes-check-controls > input[type="checkbox"] {
+  --notes-check-color: color-mix(in srgb,
+    var(--ls-link-text-color) 75%, var(--ls-primary-background-color) 25%);
+  color: var(--notes-check-color);
+  border: 1px solid var(--notes-check-color);
+  background-color: transparent;
+}
+.notes-check-controls > input[type="checkbox"]:checked {
+  background-color: var(--notes-check-color);
+  border-color: var(--notes-check-color);
+}
