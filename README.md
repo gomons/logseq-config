@@ -8,13 +8,14 @@ require adjustments. Database graphs are not supported.
 ## Features
 
 - Contents icon in the top toolbar, on desktop and mobile.
-- The navigation panel shows the full clickable page path.
-- Short page titles with clickable parent paths, including a mobile path popup.
+- Short page titles with clickable parent paths beside Contents in the toolbar.
+- On mobile, the nearest parent is visible; earlier levels open in a popup.
 - Search for Subpages, Tagged pages, and Linked References, arranged below page
   content.
 - Saved collapse state for these sections, with search hidden while collapsed.
 - Hide Unlinked References and disable page previews on hover.
-- Automatic Contents trees, tag clouds, and Favorites lists via block properties.
+- Automatic Contents trees, tag clouds, and Favorites lists via block
+  properties.
 - Block search and checklist filters: All, Unchecked, and Checked.
 - `CHECK` / `CHECKED` rendered as interactive checkboxes.
 - Boolean properties displayed as checkboxes, including in reading mode.

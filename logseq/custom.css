@@ -67,6 +67,8 @@ div.flex-1.page.relative > :is(
   position: relative;
 }
 #head .notes-toolbar-navigation {
+  min-width: 0;
+  gap: 0.4rem;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -74,8 +76,7 @@ div.flex-1.page.relative > :is(
   align-items: center;
 }
 .notes-toolbar-navigation[hidden],
-.notes-toolbar-navigation > [hidden],
-.notes-global-navigation[hidden] {
+.notes-toolbar-navigation > [hidden] {
   display: none !important;
 }
 #head .notes-toolbar-navigation > .button {
@@ -106,16 +107,16 @@ div.flex-1.page.relative > :is(
   overflow-wrap: anywhere;
 }
 
-/* The full page path occupies the first row of the navigation panel. */
+/* Each path segment shrinks independently within the available toolbar space. */
 .notes-header-path {
   display: flex;
-  flex: 0 0 100%;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: flex-start;
   gap: 0.35rem;
   min-width: 0;
   margin: 0;
-  font-size: inherit;
+  font-size: 0.8rem;
   color: var(--ls-secondary-text-color);
   white-space: nowrap;
   -webkit-app-region: no-drag;
@@ -173,7 +174,7 @@ div.flex-1.page.relative > :is(
   .notes-header-path {
     overflow: visible;
   }
-  .notes-header-path > :not(.notes-header-path-parent):not(.notes-header-path-current):not(.notes-header-path-last-separator) {
+  .notes-header-path > :not(.notes-header-path-parent) {
     display: none;
   }
   .notes-header-path > .notes-header-path-overflow {
@@ -359,29 +360,6 @@ div.flex-1.page.relative > :is(
   overflow-wrap: anywhere;
 }
 
-/* A toolbar extension outside the main page's scroll container. */
-.notes-global-navigation {
-  display: flex;
-  flex-wrap: wrap;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 0.5rem 0.65rem;
-  margin: 0.35rem 0 0.5rem;
-  background: var(--ls-secondary-background-color);
-  font-size: 0.8rem;
-  line-height: 1.4;
-  -webkit-app-region: no-drag;
-}
-:is(.light-theme, .white-theme, [data-theme="light"]) .notes-global-navigation {
-  background: color-mix(in srgb,
-    var(--ls-secondary-background-color) 94%, var(--ls-primary-text-color) 6%);
-}
-#left-container:has(> .notes-global-navigation) > #main-container {
-  min-height: 0;
-}
 /* Shared query catalog; field selection and visibility belong to the query. */
 .notes-catalog {
   list-style: none;

@@ -338,52 +338,15 @@ window.notesFeatureEnabled = (key) => {
   schedule();
 })();
 
-/* Keep Contents in the toolbar and the page path outside page scrolling. */
+/* Keep the Contents shortcut above the page in the native toolbar. */
 (() => {
   window.notesContentsShortcut?.abort();
   window.notesGlobalNavigation?.abort();
   const controller = new AbortController();
   window.notesGlobalNavigation = controller;
   const { signal } = controller;
-  let panel = null;
   let contentsLink = null;
   let toolbarIcons = null;
-  const measured = new Set();
-  const resizeObserver = window.ResizeObserver
-    ? new window.ResizeObserver(() => render()) : null;
-  const removePanel = () => {
-    panel?.remove();
-    panel = null;
-    resizeObserver?.disconnect();
-    measured.clear();
-  };
-  const alignPanel = () => {
-    const scroll = document.querySelector("#main-content-container");
-    const content = scroll?.querySelector(".journal-item, .page") ||
-      scroll?.querySelector(".cp__sidebar-main-content") || scroll;
-    const parent = panel?.parentElement;
-    if (!content || !parent) return;
-    const targets = new Set([scroll, content, parent].filter(Boolean));
-    for (const node of measured) {
-      if (!targets.has(node)) {
-        resizeObserver?.unobserve(node);
-        measured.delete(node);
-      }
-    }
-    for (const node of targets) {
-      if (!measured.has(node)) {
-        resizeObserver?.observe(node);
-        measured.add(node);
-      }
-    }
-    const bounds = content.getBoundingClientRect();
-    const outer = parent.getBoundingClientRect();
-    if (!bounds.width || !outer.width) return;
-    const left = `${Math.max(0, bounds.left - outer.left)}px`;
-    const right = `${Math.max(0, outer.right - bounds.right)}px`;
-    if (panel.style.marginLeft !== left) panel.style.marginLeft = left;
-    if (panel.style.marginRight !== right) panel.style.marginRight = right;
-  };
   const renderToolbar = (header) => {
     if (!header) { toolbarIcons?.remove(); return; }
     if (!toolbarIcons) {
@@ -396,45 +359,38 @@ window.notesFeatureEnabled = (key) => {
       contentsLink.href = "#/page/contents";
       contentsLink.title = "Open Contents";
       contentsLink.setAttribute("aria-label", "Open Contents");
-      contentsLink.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg>';
+      contentsLink.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M13 5h8M13 9h5M13 15h8M13 19h5"/><rect x="3" y="4" width="6" height="6" rx="1"/><rect x="3" y="14" width="6" height="6" rx="1"/></svg>';
       toolbarIcons.append(contentsLink);
     }
     if (toolbarIcons.parentElement !== header) header.append(toolbarIcons);
-    contentsLink.hidden = !window.notesFeatureEnabled("notes/contents-shortcut?");
-    toolbarIcons.hidden = contentsLink.hidden;
+    const title = document.querySelector("#main-content-container .ls-page-title");
+    const pageName = title?.getAttribute("data-ref") ||
+      title?.querySelector("[data-ref]")?.getAttribute("data-ref") || "";
+    contentsLink.hidden = pageName.toLowerCase() === "contents" ||
+      !window.notesFeatureEnabled("notes/contents-shortcut?");
+    toolbarIcons.hidden = contentsLink.hidden && !pageName.includes("/");
     const bounds = header.getBoundingClientRect();
     const content = document.querySelector("#main-content-container")?.getBoundingClientRect();
     const controls = header.querySelector(".l")?.getBoundingClientRect();
     const left = `${Math.max(content?.left || bounds.left, controls?.right || bounds.left) - bounds.left + 8}px`;
     if (toolbarIcons.style.left !== left) toolbarIcons.style.left = left;
+    // The native right container fills all free space; measure its controls.
+    const navigation = [...header.querySelector(".r")?.children || []]
+      .map((element) => element.getBoundingClientRect())
+      .filter((rect) => rect.width > 0)
+      .sort((a, b) => a.left - b.left)[0];
+    const right = `${Math.max(8, bounds.right - (navigation?.left || bounds.right) + 8)}px`;
+    if (toolbarIcons.style.right !== right) toolbarIcons.style.right = right;
+    window.notesUpdateParentPath?.();
   };
   const render = () => {
     if (signal.aborted) return;
-    const header = document.querySelector("#head");
-
-    if (!header) { renderToolbar(null); removePanel(); return; }
-    const title = document.querySelector("#main-content-container .ls-page-title");
-    const pageName = title?.getAttribute("data-ref") ||
-      title?.querySelector("[data-ref]")?.getAttribute("data-ref") || "";
-    const showPath = !!pageName;
-    renderToolbar(header);
-    if (!showPath) { removePanel(); return; }
-    if (!panel?.isConnected) {
-      panel = document.createElement("nav");
-      panel.className = "notes-global-navigation";
-      panel.setAttribute("aria-label", "Quick navigation");
-      for (const type of ["pointerdown", "mousedown", "touchstart", "click"])
-        panel.addEventListener(type, (event) => event.stopPropagation(), { signal });
-    }
-    if (header.nextElementSibling !== panel) header.after(panel);
-    alignPanel();
-    panel.hidden = !showPath;
-    window.notesUpdateParentPath?.();
+    renderToolbar(document.querySelector("#head"));
   };
   const observer = new MutationObserver((changes) => {
     if (changes.some(({ target, addedNodes, removedNodes }) => {
       const element = target.nodeType === 1 ? target : target.parentElement;
-      if (element?.closest(".notes-global-navigation")) return false;
+      if (element?.closest(".notes-toolbar-navigation")) return false;
       return element?.closest("#head, .ls-page-title") ||
         [...addedNodes, ...removedNodes].some((node) => node.nodeType === 1 &&
           (node.matches("#head, .ls-page-title") || node.querySelector("#head, .ls-page-title")));
@@ -450,12 +406,11 @@ window.notesFeatureEnabled = (key) => {
     observer.disconnect();
     clearInterval(timer);
     toolbarIcons?.remove();
-    removePanel();
   }, { once: true });
   render();
 })();
 
-/* Show leaf page titles and clickable parent namespaces in the navigation panel. */
+/* Show leaf page titles and clickable parent namespaces beside Contents. */
 (() => {
   window.notesPageHeadings?.abort();
   const controller = new AbortController();
@@ -537,11 +492,11 @@ window.notesFeatureEnabled = (key) => {
     return disclosure;
   };
   const updateParentPath = () => {
-    const toolbar = document.querySelector(".notes-global-navigation");
+    const toolbar = document.querySelector(".notes-toolbar-navigation");
     const source = document.querySelector("#main-content-container .ls-page-title .title[data-ref]");
     const path = source?.getAttribute("data-ref") || "";
     const old = document.querySelector(".notes-header-path");
-    if (!toolbar || !path) {
+    if (!toolbar || !path.includes("/")) {
       old?.remove();
       return;
     }
@@ -549,31 +504,26 @@ window.notesFeatureEnabled = (key) => {
     const signature = JSON.stringify([path, label]);
     if (old?.dataset.signature === signature && old.parentElement === toolbar) return;
     old?.remove();
-    const parts = path.split("/");
-    const labels = label.split("/");
+    const parts = path.split("/").slice(0, -1);
+    const labels = label.split("/").slice(0, -1);
     const names = labels.length === parts.length ? labels : parts;
     const breadcrumb = document.createElement("nav");
     breadcrumb.className = "notes-header-path";
     breadcrumb.dataset.signature = signature;
     breadcrumb.setAttribute("aria-label", "Page path");
-    if (parts.length > 2)
-      breadcrumb.append(createPathDisclosure(parts.slice(0, -2), names.slice(0, -2)));
+    if (parts.length > 1)
+      breadcrumb.append(createPathDisclosure(parts.slice(0, -1), names.slice(0, -1)));
     parts.forEach((part, index) => {
       if (index) {
         const separator = createPathSeparator();
-        if (index === parts.length - 1) separator.classList.add("notes-header-path-last-separator");
         breadcrumb.append(separator);
       }
       const link = createPathLink(parts, names, index);
       link.className = "notes-header-path-segment";
-      if (index === parts.length - 2) link.classList.add("notes-header-path-parent");
-      if (index === parts.length - 1) {
-        link.classList.add("notes-header-path-current");
-        link.setAttribute("aria-current", "page");
-      }
+      if (index === parts.length - 1) link.classList.add("notes-header-path-parent");
       breadcrumb.append(link);
     });
-    toolbar.prepend(breadcrumb);
+    toolbar.append(breadcrumb);
   };
   window.notesUpdateParentPath = updateParentPath;
   document.addEventListener("pointerdown", (event) => {
