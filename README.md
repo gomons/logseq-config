@@ -7,15 +7,14 @@ require adjustments. Database graphs are not supported.
 
 ## Features
 
-- Favorites and a Contents shortcut below the toolbar, outside page scrolling.
-- Favorites expand into a list; the panel shows the full clickable page path.
-- Drag Favorites to reorder them; the order is saved in the graph configuration.
+- Contents icon in the top toolbar, on desktop and mobile.
+- The navigation panel shows the full clickable page path.
 - Short page titles with clickable parent paths, including a mobile path popup.
 - Search for Subpages, Tagged pages, and Linked References, arranged below page
   content.
 - Saved collapse state for these sections, with search hidden while collapsed.
 - Hide Unlinked References and disable page previews on hover.
-- Automatic Contents trees and tag clouds, enabled by block properties.
+- Automatic Contents trees, tag clouds, and Favorites lists via block properties.
 - Block search and checklist filters: All, Unchecked, and Checked.
 - `CHECK` / `CHECKED` rendered as interactive checkboxes.
 - Boolean properties displayed as checkboxes, including in reading mode.
@@ -28,21 +27,20 @@ require adjustments. Database graphs are not supported.
 Add these entries inside the existing map in your graph's `logseq/config.edn`:
 
 ```clojure
-:notes/favorites? true
 :notes/contents-shortcut? true
 :notes/hide-unlinked-references? true
 :ui/enable-tooltip? false
 ```
 
-Set `favorites?` or `contents-shortcut?` to `false` to hide those links. Set
+Set `contents-shortcut?` to `false` to hide the Contents icon. Set
 `hide-unlinked-references?` to `false` to show Unlinked References. These custom
 options default to `true`.
 
-Favorites and the Contents shortcut can also be configured per device:
+The Contents shortcut can also be configured per device:
 
 ```clojure
-:notes/desktop {:favorites? false :contents-shortcut? false}
-:notes/mobile {:favorites? true :contents-shortcut? true}
+:notes/desktop {:contents-shortcut? false}
+:notes/mobile {:contents-shortcut? true}
 ```
 
 Device values override the shared settings. Omitted keys use the shared value.
@@ -76,6 +74,12 @@ Other properties can be placed on individual blocks.
   Render a page tree inside this block, starting with pages tagged
   `[[Contents]]` and following namespace children. Search matches the final page
   name and shows clickable paths.
+
+- `auto-favorites:: true`
+
+  Render Favorites inside this block, in the order saved in the graph
+  configuration. Works on any page, independently of the Contents shortcut
+  setting.
 
 - `auto-tags:: true`
 

@@ -5,7 +5,7 @@ window.notesFeatureEnabled = (key) => {
   if (!graph) return true;
   // Read the value directly: Logseq normalizes keyword names in returned maps.
   const path = ["config", `@${graph}`];
-  if (["notes/favorites?", "notes/contents-shortcut?"].includes(key)) {
+  if (key === "notes/contents-shortcut?") {
     const platform = window.Capacitor?.getPlatform?.();
     const navigator = window.navigator;
     const mobile = platform === "ios" || platform === "android" ||
@@ -338,68 +338,16 @@ window.notesFeatureEnabled = (key) => {
   schedule();
 })();
 
-/* Keep Contents and Favorites below the toolbar, outside page scrolling. */
+/* Keep Contents in the toolbar and the page path outside page scrolling. */
 (() => {
   window.notesContentsShortcut?.abort();
-  window.notesFavorites?.abort();
   window.notesGlobalNavigation?.abort();
   const controller = new AbortController();
   window.notesGlobalNavigation = controller;
   const { signal } = controller;
   let panel = null;
-  let favorites = [];
-  let signature = null;
-  let graph = null;
-  let busy = false;
-  let favoritesOpen = false;
-  let drag = null;
-  let savingOrder = false;
-  const clearDropIndicator = () => {
-    panel?.querySelectorAll(".notes-favorite-drop-before, .notes-favorite-drop-after")
-      .forEach((item) => item.classList.remove("notes-favorite-drop-before", "notes-favorite-drop-after"));
-  };
-  const clearDrag = () => {
-    clearDropIndicator();
-    drag = null;
-  };
-  const markTarget = (item, x) => {
-    if (!drag) return;
-    clearDropIndicator();
-    if (!item || item.dataset.favorite === drag.name) {
-      drag.target = null;
-      return;
-    }
-    const bounds = item.getBoundingClientRect();
-    drag.target = item.dataset.favorite;
-    drag.after = x > bounds.left + bounds.width / 2;
-    item.classList.add(drag.after ? "notes-favorite-drop-after" : "notes-favorite-drop-before");
-  };
-  const saveOrder = async () => {
-    const move = drag;
-    clearDrag();
-    const api = window.logseq?.api;
-    if (!move?.target || savingOrder || move.graph !== currentGraph() || !api?.set_current_graph_configs) return;
-    savingOrder = true;
-    try {
-      const names = [...await api.get_current_graph_favorites()];
-      if (signal.aborted || move.graph !== currentGraph()) return;
-      const from = names.indexOf(move.name);
-      if (from < 0 || !names.includes(move.target)) return;
-      const originalOrder = JSON.stringify(names);
-      names.splice(from, 1);
-      names.splice(names.indexOf(move.target) + (move.after ? 1 : 0), 0, move.name);
-      if (JSON.stringify(names) === originalOrder) return;
-      await api.set_current_graph_configs({ favorites: names });
-      if (signal.aborted || move.graph !== currentGraph()) return;
-      const entries = new Map(favorites.map((entry) => [entry.name, entry]));
-      favorites = names.map((name) => entries.get(name) || { name, label: name });
-      signature = JSON.stringify([move.graph, names]);
-      render();
-    } catch (error) {
-      console.warn("Favorites order:", error);
-      if (panel) panel.title = "Could not save Favorites order";
-    } finally { savingOrder = false; }
-  };
+  let contentsLink = null;
+  let toolbarIcons = null;
   const measured = new Set();
   const resizeObserver = window.ResizeObserver
     ? new window.ResizeObserver(() => render()) : null;
@@ -436,19 +384,41 @@ window.notesFeatureEnabled = (key) => {
     if (panel.style.marginLeft !== left) panel.style.marginLeft = left;
     if (panel.style.marginRight !== right) panel.style.marginRight = right;
   };
-  const currentGraph = () => window.logseq?.api?.get_state_from_store?.("git/current-repo");
+  const renderToolbar = (header) => {
+    if (!header) { toolbarIcons?.remove(); return; }
+    if (!toolbarIcons) {
+      toolbarIcons = document.createElement("div");
+      toolbarIcons.className = "notes-toolbar-navigation";
+      for (const type of ["pointerdown", "mousedown", "touchstart", "click", "dblclick"])
+        toolbarIcons.addEventListener(type, (event) => event.stopPropagation(), { signal });
+      contentsLink = document.createElement("a");
+      contentsLink.className = "notes-contents-shortcut button icon";
+      contentsLink.href = "#/page/contents";
+      contentsLink.title = "Open Contents";
+      contentsLink.setAttribute("aria-label", "Open Contents");
+      contentsLink.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg>';
+      toolbarIcons.append(contentsLink);
+    }
+    if (toolbarIcons.parentElement !== header) header.append(toolbarIcons);
+    contentsLink.hidden = !window.notesFeatureEnabled("notes/contents-shortcut?");
+    toolbarIcons.hidden = contentsLink.hidden;
+    const bounds = header.getBoundingClientRect();
+    const content = document.querySelector("#main-content-container")?.getBoundingClientRect();
+    const controls = header.querySelector(".l")?.getBoundingClientRect();
+    const left = `${Math.max(content?.left || bounds.left, controls?.right || bounds.left) - bounds.left + 8}px`;
+    if (toolbarIcons.style.left !== left) toolbarIcons.style.left = left;
+  };
   const render = () => {
     if (signal.aborted) return;
     const header = document.querySelector("#head");
-    if (!header) { removePanel(); return; }
+
+    if (!header) { renderToolbar(null); removePanel(); return; }
     const title = document.querySelector("#main-content-container .ls-page-title");
     const pageName = title?.getAttribute("data-ref") ||
       title?.querySelector("[data-ref]")?.getAttribute("data-ref") || "";
     const showPath = !!pageName;
-    const showContents = window.notesFeatureEnabled("notes/contents-shortcut?");
-    const showFavorites = window.notesFeatureEnabled("notes/favorites?") &&
-      graph === currentGraph() && favorites.length > 0;
-    if (!showContents && !showFavorites && !showPath) { removePanel(); return; }
+    renderToolbar(header);
+    if (!showPath) { removePanel(); return; }
     if (!panel?.isConnected) {
       panel = document.createElement("nav");
       panel.className = "notes-global-navigation";
@@ -458,132 +428,8 @@ window.notesFeatureEnabled = (key) => {
     }
     if (header.nextElementSibling !== panel) header.after(panel);
     alignPanel();
+    panel.hidden = !showPath;
     window.notesUpdateParentPath?.();
-    const key = JSON.stringify([showContents, showFavorites, signature]);
-    if (panel.dataset.signature === key) return;
-    panel.dataset.signature = key;
-    const breadcrumb = panel.querySelector(".notes-header-path");
-    panel.replaceChildren(...(breadcrumb ? [breadcrumb] : []));
-    if (showContents) {
-      const link = document.createElement("a");
-      link.className = "notes-contents-shortcut";
-      link.href = "#/page/contents";
-      link.title = "Open Contents";
-      link.setAttribute("aria-label", "Open Contents");
-      link.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg><span>Contents</span>';
-      panel.append(link);
-    }
-    if (showFavorites) {
-      const toggle = document.createElement("button");
-      toggle.type = "button";
-      toggle.className = "notes-favorites-toggle";
-      toggle.setAttribute("aria-controls", "notes-global-favorites");
-      const nav = document.createElement("div");
-      nav.id = "notes-global-favorites";
-      nav.className = "notes-favorites";
-      nav.setAttribute("aria-label", "Favorites");
-      const star = document.createElement("span");
-      star.className = "notes-favorites-star";
-      star.textContent = "★";
-      star.setAttribute("aria-hidden", "true");
-      const label = document.createElement("span");
-      label.textContent = `Favorites · ${favorites.length}`;
-      const arrow = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      arrow.setAttribute("class", "notes-favorites-arrow");
-      arrow.setAttribute("viewBox", "0 0 24 24");
-      arrow.setAttribute("fill", "none");
-      arrow.setAttribute("stroke", "currentColor");
-      arrow.setAttribute("stroke-width", "2");
-      arrow.setAttribute("stroke-linecap", "round");
-      arrow.setAttribute("stroke-linejoin", "round");
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", "M6 9l6 6 6-6");
-      arrow.append(path);
-      arrow.setAttribute("aria-hidden", "true");
-      toggle.append(star, label, arrow);
-      const paint = () => {
-        nav.hidden = !favoritesOpen;
-        toggle.setAttribute("aria-expanded", String(favoritesOpen));
-      };
-      toggle.addEventListener("click", () => {
-        favoritesOpen = !favoritesOpen;
-        paint();
-      }, { signal });
-      paint();
-      favorites.forEach(({ name, label }) => {
-        const item = document.createElement("span");
-        item.className = "notes-favorites-item";
-        item.dataset.favorite = name;
-        if (window.logseq?.api?.set_current_graph_configs) {
-          item.draggable = true;
-          const handle = document.createElement("button");
-          handle.type = "button";
-          handle.className = "notes-favorite-drag-handle";
-          handle.textContent = "⠿";
-          handle.setAttribute("aria-label", `Reorder ${label}`);
-          handle.title = "Drag to reorder";
-          handle.addEventListener("pointerdown", (event) => {
-            if (event.button !== 0 || savingOrder) return;
-            event.preventDefault();
-            drag = { name, graph: currentGraph(), pointerId: event.pointerId };
-            handle.setPointerCapture?.(event.pointerId);
-          }, { signal });
-          item.append(handle);
-          item.addEventListener("dragstart", (event) => {
-            if (savingOrder) { event.preventDefault(); return; }
-            drag = { name, graph: currentGraph() };
-            event.dataTransfer?.setData("text/plain", name);
-            if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-          }, { signal });
-          item.addEventListener("dragover", (event) => {
-            if (!drag) return;
-            event.preventDefault();
-            markTarget(item, event.clientX);
-          }, { signal });
-          item.addEventListener("drop", (event) => {
-            if (!drag) return;
-            event.preventDefault();
-            void saveOrder();
-          }, { signal });
-          item.addEventListener("dragend", clearDrag, { signal });
-        }
-        const link = document.createElement("a");
-        link.textContent = label.split("/").pop();
-        link.href = "#/page/" + encodeURIComponent(name);
-        link.draggable = false;
-        link.title = label;
-        item.append(link);
-        nav.append(item);
-      });
-      panel.append(toggle, nav);
-    }
-  };
-  const refresh = async () => {
-    if (drag || savingOrder) return;
-    render();
-    const api = window.logseq?.api;
-    if (busy || !api?.get_current_graph_favorites || !window.notesFeatureEnabled("notes/favorites?")) return;
-    busy = true;
-    const requestedGraph = currentGraph();
-    try {
-      const names = [...new Set(await api.get_current_graph_favorites())]
-        .filter((name) => typeof name === "string" && name.trim());
-      const next = JSON.stringify([requestedGraph, names]);
-      if (next !== signature) {
-        const entries = await Promise.all(names.map(async (name) => {
-          const page = await api.get_page(name);
-          return { name, label: page?.originalName || page?.["original-name"] || name };
-        }));
-        if (signal.aborted || requestedGraph !== currentGraph()) return;
-        if (graph !== requestedGraph) favoritesOpen = false;
-        favorites = entries;
-        graph = requestedGraph;
-        signature = next;
-      }
-      render();
-    } catch (error) {
-      console.warn("Quick navigation:", error);
-    } finally { busy = false; }
   };
   const observer = new MutationObserver((changes) => {
     if (changes.some(({ target, addedNodes, removedNodes }) => {
@@ -597,28 +443,16 @@ window.notesFeatureEnabled = (key) => {
   observer.observe(document.body, {
     childList: true, subtree: true, attributes: true, attributeFilter: ["data-ref"],
   });
-  document.addEventListener("pointermove", (event) => {
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const item = document.elementFromPoint(event.clientX, event.clientY)?.closest(".notes-favorites-item");
-    markTarget(item && panel?.contains(item) ? item : null, event.clientX);
-  }, { signal });
-  document.addEventListener("pointerup", (event) => {
-    if (drag?.pointerId === event.pointerId) void saveOrder();
-  }, { signal });
-  document.addEventListener("pointercancel", clearDrag, { signal });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") clearDrag();
-  }, { signal });
-  const timer = setInterval(refresh, 1000);
-  window.addEventListener("hashchange", refresh, { signal });
+  const timer = setInterval(render, 1000);
+  window.addEventListener("hashchange", render, { signal });
   window.addEventListener("resize", render, { signal });
   signal.addEventListener("abort", () => {
     observer.disconnect();
     clearInterval(timer);
-    clearDrag();
+    toolbarIcons?.remove();
     removePanel();
   }, { once: true });
-  void refresh();
+  render();
 })();
 
 /* Show leaf page titles and clickable parent namespaces in the navigation panel. */
@@ -1302,7 +1136,7 @@ window.notesSubtreeSearch = new AbortController();
   refresh();
 })();
 
-/* Opt-in Contents: auto-contents:: true and auto-tags:: true on any block. */
+/* Opt-in Contents: automatic pages, tags and Favorites on any block. */
 (() => {
   window.notesAutomaticContents?.abort();
   const controller = new AbortController();
@@ -1360,9 +1194,33 @@ window.notesSubtreeSearch = new AbortController();
     if (!tags.length) cloud.textContent = "No tags yet";
     return cloud;
   };
+  const renderFavorites = (favorites) => {
+    const list = document.createElement("div");
+    list.className = "notes-automatic-favorites notes-tag-cloud";
+    favorites.forEach(({ name, label }, index) => {
+      const item = document.createElement("span");
+      item.className = "notes-automatic-favorite";
+      const link = document.createElement("a");
+      link.href = `#/page/${encodeURIComponent(name)}`;
+      link.textContent = label.split("/").at(-1);
+      link.title = label;
+      item.append(link);
+      if (index < favorites.length - 1) {
+        const separator = document.createElement("span");
+        separator.className = "notes-favorite-separator";
+        separator.textContent = "·";
+        separator.setAttribute("aria-hidden", "true");
+        item.append(separator);
+      }
+      list.append(item);
+    });
+    if (!favorites.length) list.textContent = "No Favorites yet";
+    return list;
+  };
   const blockQuery = `[:find (pull ?block [:block/uuid :block/content :block/properties])
                       :where [?block :block/properties ?props]
-                      (or [(get ?props :auto-contents)] [(get ?props :auto-tags)])]`;
+                      (or [(get ?props :auto-contents)] [(get ?props :auto-tags)]
+                          [(get ?props :auto-favorites)])]`;
   const remove = (anchor) => {
     states.get(anchor)?.section.remove();
     states.delete(anchor);
@@ -1424,11 +1282,19 @@ window.notesSubtreeSearch = new AbortController();
       const blockRows = await api.datascript_query(blockQuery);
       const candidates = (blockRows || []).map(([block]) => ({
         uuid: field(block, "uuid"),
-        options: { pages: option(block, "auto-contents"), tags: option(block, "auto-tags") },
-      })).filter(({ options }) => options.pages || options.tags);
+        options: { pages: option(block, "auto-contents"), tags: option(block, "auto-tags"),
+          favorites: option(block, "auto-favorites") },
+      })).filter(({ options }) => options.pages || options.tags || options.favorites);
       const tags = candidates.some(({ options }) => options.tags)
         ? countTags(await api.datascript_query(tagQuery)) : [];
       if (signal.aborted) return;
+      const favoriteNames = candidates.some(({ options }) => options.favorites)
+        ? await api.get_current_graph_favorites?.() || [] : [];
+      if (signal.aborted) return;
+      const pageLabels = new Map(pages.map((page) => [page.name, page.label]));
+      const favorites = favoriteNames.filter((name) => typeof name === "string" && name.trim())
+        .map((name) => ({ name, label: pageLabels.get(name.toLowerCase()) || name }));
+      const favoriteSignature = JSON.stringify(favorites);
       const treeSignature = JSON.stringify(pages.map(({ properties, ...page }) => page));
       const tagSignature = JSON.stringify(tags);
       const active = new Set();
@@ -1452,7 +1318,9 @@ window.notesSubtreeSearch = new AbortController();
             state = { section, groups: new Map() };
             states.set(anchor, state);
           }
+          let groupIndex = 0;
           for (const [key, label, signature] of [
+            ["favorites", "Favorites", favoriteSignature],
             ["pages", "Pages", treeSignature], ["tags", "Tags", tagSignature],
           ]) {
             let group = state.groups.get(key);
@@ -1462,21 +1330,24 @@ window.notesSubtreeSearch = new AbortController();
               continue;
             }
             if (!group) {
-              const element = document.createElement("section");
+              const element = document.createElement("details");
               element.className = "notes-automatic-group";
+              element.open = true;
+              const summary = document.createElement("summary");
               const heading = document.createElement("h3");
               heading.textContent = label;
-              element.append(heading);
+              summary.append(heading);
+              element.append(summary);
               group = { element, signature: null };
               state.groups.set(key, group);
             }
-            // Keep Pages before Tags even when either property changes.
-            const position = key === "pages" ? state.section.firstElementChild : null;
-            if (group.element.parentElement !== state.section)
+            const position = state.section.children[groupIndex++] || null;
+            if (position !== group.element)
               state.section.insertBefore(group.element, position);
             if (group.signature === signature) continue;
             const old = group.element.querySelector(".notes-contents-tree, .notes-tag-cloud");
-            const body = key === "pages" ? renderTree(pages, old) : renderTags(tags);
+            const body = key === "pages" ? renderTree(pages, old)
+              : key === "favorites" ? renderFavorites(favorites) : renderTags(tags);
             if (old) old.replaceWith(body);
             else group.element.append(body);
             group.signature = signature;

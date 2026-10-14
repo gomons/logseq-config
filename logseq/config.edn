@@ -1,13 +1,12 @@
 {:meta/version 1
 
- ;; Custom page navigation. Set either flag to false to hide it.
- :notes/favorites? true
+ ;; Contents shortcut. Set to false to hide it.
  :notes/contents-shortcut? true
 
- ;; Device overrides for Favorites and the Contents shortcut.
+ ;; Device overrides for the Contents shortcut.
  ;; Omit a key to use its shared setting above.
- :notes/desktop {:favorites? true :contents-shortcut? true}
- :notes/mobile {:favorites? true :contents-shortcut? true}
+ :notes/desktop {:contents-shortcut? true}
+ :notes/mobile {:contents-shortcut? true}
 
  ;; Hide Unlinked References. Set to false to show the native section.
  :notes/hide-unlinked-references? true
