@@ -94,6 +94,17 @@ div.flex-1.page.relative > :is(
   height: 24px;
   display: block;
 }
+#head .notes-contents-shortcut {
+  -webkit-tap-highlight-color: transparent;
+}
+#head .notes-contents-shortcut:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+#head .notes-contents-shortcut:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 2px;
+}
 /* Preserve the native full title for Logseq while displaying its leaf name. */
 .notes-has-namespace-title .title[data-ref] {
   display: none !important;
