@@ -395,6 +395,12 @@ window.notesFeatureEnabled = (key) => {
       .sort((a, b) => a.left - b.left)[0];
     const right = `${Math.max(8, bounds.right - (navigation?.left || bounds.right) + 8)}px`;
     if (toolbarIcons.style.right !== right) toolbarIcons.style.right = right;
+    // Mobile headers include top safe-area padding; follow the actual icon row.
+    const icon = [...header.querySelectorAll(".r .button.icon")]
+      .map((element) => element.getBoundingClientRect())
+      .find((rect) => rect.width > 0 && rect.height > 0);
+    const top = icon ? `${icon.top + icon.height / 2 - bounds.top}px` : "50%";
+    if (toolbarIcons.style.top !== top) toolbarIcons.style.top = top;
     window.notesUpdateParentPath?.();
   };
   const render = () => {

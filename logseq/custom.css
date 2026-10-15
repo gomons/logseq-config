@@ -550,19 +550,29 @@ div.flex-1.page.relative > :is(
   color: var(--lx-gray-12, var(--ls-header-button-background, var(--rx-gray-12)));
 }
 #head .notes-toolbar-actions > .button[hidden] {
-  display: none;
+  display: none !important;
 }
 #head .notes-toolbar-actions svg {
-  width: 24px;
-  height: 24px;
+  /* The list drawing spans 17.8 of its 24 viewBox units. */
+  width: 22.5px;
+  height: 22.5px;
   display: block;
   flex-shrink: 0;
 }
 #head .notes-toolbar-actions .notes-page-favorite svg {
-  width: 22px;
-  height: 22px;
+  /* Match Home's visible height, including the star's stroke. */
+  width: 18.9px;
+  height: 18.9px;
+  transform: translateY(0.3px);
   stroke-width: 2;
   fill: none;
+}
+/* Native icon glyphs have different internal fields; match Home's ink height. */
+#head #left-menu .ti-menu-2 {
+  font-size: 24.1px !important;
+}
+#head .toggle-right-sidebar .ti-layout-sidebar-right {
+  font-size: 21.52px !important;
 }
 /* One mobile spacing system for native and custom header controls. */
 @media (max-width: 640px) {
