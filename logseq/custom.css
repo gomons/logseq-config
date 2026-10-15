@@ -507,44 +507,46 @@ div.flex-1.page.relative > :is(
   cursor: wait;
 }
 
-/* A page Favorite action stays beside the title in both themes. */
-.ls-page-title h1:has(> .notes-page-favorite) {
+/* Native toolbar actions share Home's color and spacing. */
+#head .notes-toolbar-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
+  flex-shrink: 0;
 }
-.ls-page-title h1:has(> .notes-page-favorite) > :is(
-  .page-title-sizer-wrapper, .title, .notes-namespace-title
-) {
-  flex: 0 1 auto;
-  min-width: 0;
-  width: auto;
-}
-.notes-page-favorite {
+#head .notes-toolbar-actions > .button {
   display: inline-flex;
-  vertical-align: middle;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  margin: 0 0.25rem;
+  padding: 4px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  margin: 0;
-  padding: 6px;
-  border: 0;
-  background: transparent;
-  color: var(--ls-secondary-text-color);
+  color: var(--lx-gray-11, var(--ls-header-button-background, var(--rx-gray-11)));
   cursor: pointer;
   touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
   -webkit-app-region: no-drag;
+  -webkit-tap-highlight-color: transparent;
 }
-.notes-page-favorite svg {
+#head .notes-toolbar-actions > .button:hover {
+  color: var(--lx-gray-12, var(--ls-header-button-background, var(--rx-gray-12)));
+}
+#head .notes-toolbar-actions > .button[hidden] {
+  display: none;
+}
+#head .notes-toolbar-actions svg {
   width: 24px;
   height: 24px;
+  display: block;
+  flex-shrink: 0;
+}
+#head .notes-toolbar-actions .notes-page-favorite svg {
+  width: 22px;
+  height: 22px;
   fill: none;
 }
-.notes-page-favorite[aria-pressed="true"] svg {
+#head .notes-toolbar-actions .notes-page-favorite[aria-pressed="true"] svg {
   fill: currentColor;
 }
 .notes-page-favorite:focus:not(:focus-visible) {

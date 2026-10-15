@@ -346,8 +346,9 @@ window.notesFeatureEnabled = (key) => {
   const { signal } = controller;
   let contentsLink = null;
   let toolbarIcons = null;
+  let actions = null;
   const renderToolbar = (header) => {
-    if (!header) { toolbarIcons?.remove(); return; }
+    if (!header) { toolbarIcons?.remove(); actions?.remove(); return; }
     if (!toolbarIcons) {
       toolbarIcons = document.createElement("div");
       toolbarIcons.className = "notes-toolbar-navigation";
@@ -359,15 +360,25 @@ window.notesFeatureEnabled = (key) => {
       contentsLink.title = "Open Contents";
       contentsLink.setAttribute("aria-label", "Open Contents");
       contentsLink.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M13 5h8M13 9h5M13 15h8M13 19h5"/><rect x="3" y="4" width="6" height="6" rx="1"/><rect x="3" y="14" width="6" height="6" rx="1"/></svg>';
-      toolbarIcons.append(contentsLink);
+      actions = document.createElement("div");
+      actions.className = "notes-toolbar-actions";
+      actions.append(contentsLink);
     }
     if (toolbarIcons.parentElement !== header) header.append(toolbarIcons);
+    const rightGroup = header.querySelector(".r");
+    if (rightGroup) {
+      const home = rightGroup.querySelector("button:has(.ti-home), button:has(.tabler-icon-home), button:has(.icon-tabler-home), button.inline.mx-1");
+      let homeSlot = home;
+      while (homeSlot && homeSlot.parentElement !== rightGroup) homeSlot = homeSlot.parentElement;
+      const position = homeSlot ? homeSlot.nextSibling : rightGroup.firstChild;
+      if (position !== actions) rightGroup.insertBefore(actions, position);
+    }
     const title = document.querySelector("#main-content-container .ls-page-title");
     const pageName = title?.getAttribute("data-ref") ||
       title?.querySelector("[data-ref]")?.getAttribute("data-ref") || "";
     contentsLink.hidden = pageName.toLowerCase() === "contents" ||
       !window.notesFeatureEnabled("notes/contents-shortcut?");
-    toolbarIcons.hidden = contentsLink.hidden && !pageName.includes("/");
+    toolbarIcons.hidden = !pageName.includes("/");
     const bounds = header.getBoundingClientRect();
     const content = document.querySelector("#main-content-container")?.getBoundingClientRect();
     // Native header groups reserve extra space on mobile; use visible controls.
@@ -409,6 +420,7 @@ window.notesFeatureEnabled = (key) => {
     observer.disconnect();
     clearInterval(timer);
     toolbarIcons?.remove();
+    actions?.remove();
   }, { once: true });
   render();
 })();
@@ -1749,16 +1761,18 @@ window.notesSubtreeSearch = new AbortController();
       const favorites = await api.get_current_graph_favorites();
       if (signal.aborted || requestedGraph !== graph()) return;
       const active = new Set();
-      document.querySelectorAll(".ls-page-title h1").forEach((heading) => {
+      document.querySelectorAll("#main-content-container .ls-page-title h1").forEach((heading) => {
         const source = heading.querySelector(".title[data-ref]");
         const name = source?.getAttribute("data-ref");
         if (!name || heading.querySelector("input, textarea")) return;
+        const actions = document.querySelector("#head .notes-toolbar-actions");
+        if (!actions) return;
         active.add(heading);
         let button = buttons.get(heading);
         if (!button?.isConnected) {
           button = document.createElement("button");
           button.type = "button";
-          button.className = "notes-page-favorite";
+          button.className = "notes-page-favorite button icon";
           button.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 2 3 6.4 7 .9-5.1 4.9 1.3 7-6.2-3.4-6.2 3.4 1.3-7L2 9.3l7-.9Z"/></svg>';
           for (const type of ["pointerdown", "mousedown", "touchstart", "dblclick"])
             button.addEventListener(type, (event) => event.stopPropagation(), { signal });
@@ -1784,7 +1798,7 @@ window.notesSubtreeSearch = new AbortController();
               void refresh();
             }
           }, { signal });
-          heading.append(button);
+          actions.append(button);
           buttons.set(heading, button);
         }
         button.dataset.page = name;

@@ -7,9 +7,9 @@ require adjustments. Database graphs are not supported.
 
 ## Features
 
-- Star beside the page title adds or removes it from Favorites.
+- Star beside Contents in the toolbar adds or removes the page from Favorites.
 - Contents icon in the top toolbar, on desktop and mobile; hidden on Contents.
-- Short page titles with clickable parent paths beside Contents in the toolbar.
+- Short page titles with clickable parent paths in the toolbar.
 - On mobile, the nearest parent is visible; earlier levels open in a popup.
 - Search for Subpages, Tagged pages, and Linked References, arranged below page
   content.
