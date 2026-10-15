@@ -118,8 +118,8 @@ state; reloading resets these sections to expanded.
 
 Custom query views use `.notes-catalog`, `.notes-catalog-item`, and
 `.notes-catalog-field` to share styling and search. Only visible fields are
-searched. Field selection belongs to the query; catalog queries remain in the
-graph.
+searched, including aliases of pages linked in those fields. Field selection
+belongs to the query; catalog queries remain in the graph.
 
 Titles use `.notes-catalog-title` and `data-field="page-title"`.
 Aliases use `data-field="page-alias"`. Both must also use

@@ -21,17 +21,23 @@ window.notesFeatureEnabled = (key) => {
 
 /* Alias lookups share the page snapshot already read by automatic Contents. */
 window.notesPageAliasIndex = null;
-window.notesMatchingAlias = (link, terms) => {
-  if (!terms.length) return "";
+window.notesAliasesForReference = (reference) => {
   const index = window.notesPageAliasIndex;
   const graph = window.logseq?.api?.get_state_from_store?.("git/current-repo");
-  if (!index || index.graph !== graph) return "";
-  const destination = link?.getAttribute("href") || link?.querySelector("a:last-of-type")?.getAttribute("href");
-  if (!destination?.includes("#/page/")) return "";
-  let name;
-  try { name = decodeURIComponent(destination.split("#/page/")[1]).toLowerCase(); }
-  catch { return ""; }
-  return (index.pages.get(name) || []).find((alias) => {
+  if (!index || index.graph !== graph) return [];
+  let name = reference?.getAttribute("data-ref");
+  if (!name) {
+    const destination = reference?.getAttribute("href") ||
+      reference?.querySelector("a:last-of-type")?.getAttribute("href");
+    if (!destination?.includes("#/page/")) return [];
+    try { name = decodeURIComponent(destination.split("#/page/")[1]); }
+    catch { return []; }
+  }
+  return index.pages.get(name.toLowerCase()) || [];
+};
+window.notesMatchingAlias = (link, terms) => {
+  if (!terms.length) return "";
+  return window.notesAliasesForReference(link).find((alias) => {
     const text = alias.normalize("NFKC").toLocaleLowerCase().replace(/ё/g, "е");
     return terms.every((term) => text.includes(term));
   }) || "";
@@ -1432,7 +1438,13 @@ window.notesSubtreeSearch = new AbortController();
     let count = 0;
     for (const row of catalogRows(catalog)) {
       const text = normalize([...row.querySelectorAll(".notes-catalog-field:not([hidden])")]
-        .map((field) => field.textContent).join(" "));
+        .map((field) => {
+          const references = [...field.querySelectorAll('[data-ref], a[href*="#/page/"]')];
+          if (field.matches('[data-ref], a[href*="#/page/"]')) references.push(field);
+          const aliases = references.flatMap((reference) =>
+            window.notesAliasesForReference?.(reference) || []);
+          return [field.textContent, ...aliases].join(" ");
+        }).join(" "));
       const matches = terms.every((term) => text.includes(term));
       row.classList.toggle("notes-catalog-search-hidden", !matches);
       if (matches) count++;
