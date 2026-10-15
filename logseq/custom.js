@@ -692,7 +692,7 @@ window.notesFeatureEnabled = (key) => {
   const safeControl = (target) =>
     target.closest(
       [
-        ".notes-property-toggle", ".notes-page-favorite", ".breadcrumb .page-reference", ".sidebar-item-header",
+        ".notes-property-toggle", ".notes-tag-action", ".notes-tag-input", ".notes-page-favorite", ".breadcrumb .page-reference", ".sidebar-item-header",
         ".block-control", ".bullet-link-wrap", ".block-children-left-border",
         ".open-block-ref-link", ".block-ref-wrap", ".page-blocks-collapse-control",
         ".foldable-title", ".notes-page-list-filter", ".notes-subtree-search",
@@ -703,7 +703,7 @@ window.notesFeatureEnabled = (key) => {
       ].join(", "),
     );
   const editableSearch = (target) =>
-    target.matches('input[type="search"]');
+    target.matches('input[type="search"], .notes-tag-input');
   function guard(event) {
     const target =
       event.target instanceof Element
@@ -1708,7 +1708,7 @@ window.notesSubtreeSearch = new AbortController();
           keyElement?.textContent.replace(/:\s*$/, "").trim() || "").toLowerCase();
         const uuid = host?.getAttribute("blockid");
         const existing = controls.get(element);
-        if (!uuid || !/^[\w-]+$/.test(key) || !["true", "false"].includes(value) || host.querySelector("textarea")) {
+        if (!uuid || key === "tags" || !/^[\w-]+$/.test(key) || !["true", "false"].includes(value) || host.querySelector("textarea")) {
           existing?.button.remove();
           controls.delete(element);
           continue;
@@ -1839,6 +1839,223 @@ window.notesSubtreeSearch = new AbortController();
     clearInterval(timer);
     for (const button of buttons.values()) button.remove();
     buttons.clear();
+  }, { once: true });
+  void refresh();
+})();
+
+
+/* Edit tags in native property panels without replacing their edit target. */
+(() => {
+  window.notesTagProperties?.abort();
+  const controller = new AbortController();
+  window.notesTagProperties = controller;
+  const { signal } = controller;
+  const states = new Map();
+  const saving = new Set();
+  const line = /^([ \t]*tags::[ \t]*)([^\r\n]*)(?=\r?$)/im;
+  let timer = null;
+  let running = false;
+  let rerun = false;
+  const parse = (value) => {
+    const parts = [];
+    let start = 0;
+    let wiki = false;
+    for (let i = 0; i < value.length; i++) {
+      if (value.slice(i, i + 2) === "[[") { wiki = true; i++; }
+      else if (value.slice(i, i + 2) === "]]") { wiki = false; i++; }
+      else if (value[i] === "," && !wiki) { parts.push(value.slice(start, i)); start = i + 1; }
+    }
+    parts.push(value.slice(start));
+    return parts.flatMap((part) => {
+      const refs = [...part.matchAll(/\[\[([^\]]+)\]\]/g)];
+      return refs.length && !part.replace(/\[\[[^\]]+\]\]/g, "").trim()
+        ? refs.map((match) => match[1].trim()) : [part.trim()];
+    }).filter(Boolean);
+  };
+  const remove = (element, state) => {
+    state.editor.remove();
+    element.classList.remove("notes-tag-property");
+    states.delete(element);
+  };
+  const change = async (state, name, add) => {
+    if (saving.has(state.uuid)) return;
+    saving.add(state.uuid);
+    for (const view of states.values()) {
+      if (view.uuid === state.uuid)
+        view.editor.querySelectorAll("button, input").forEach((control) => { control.disabled = true; });
+    }
+    try {
+      const api = window.logseq.api;
+      const graph = api.get_state_from_store?.("git/current-repo");
+      if (state.graph !== graph) return;
+      const block = await api.get_block(state.uuid);
+      if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
+      const match = block?.content?.match(line);
+      if (!match) return;
+      const names = parse(match[2]);
+      const equal = (tag) => tag.toLowerCase() === name.toLowerCase();
+      const next = add ? names.some(equal) ? names : [...names, name] : names.filter((tag) => !equal(tag));
+      if (JSON.stringify(next) !== JSON.stringify(names)) {
+        const content = block.content.replace(line, (_, prefix) =>
+          prefix + next.map((tag) => `[[${tag}]]`).join(", "));
+        await api.update_block(state.uuid, content);
+      }
+      state.input.value = "";
+      state.input.hidden = true;
+      state.add.setAttribute("aria-expanded", "false");
+    } catch (error) {
+      state.status.textContent = "Could not update tags";
+      console.warn("Tag properties:", error);
+    } finally {
+      saving.delete(state.uuid);
+      for (const view of states.values()) {
+        if (view.uuid === state.uuid)
+          view.editor.querySelectorAll("button, input").forEach((control) => { control.disabled = false; });
+      }
+      schedule();
+    }
+  };
+  const stopGesture = (control) => {
+    for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart",
+      "touchend", "touchcancel", "click", "dblclick", "keydown", "keyup"])
+      control.addEventListener(type, (event) => event.stopPropagation(), { signal });
+  };
+  const mount = (element, uuid) => {
+    const editor = document.createElement("span");
+    editor.className = "notes-tag-editor";
+    const chips = document.createElement("span");
+    chips.className = "notes-tag-chips";
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "notes-tag-action";
+    add.textContent = "+";
+    add.title = "Add tag";
+    add.setAttribute("aria-label", "Add tag");
+    add.setAttribute("aria-expanded", "false");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "notes-tag-input";
+    input.placeholder = "Page name";
+    input.setAttribute("aria-label", "New tag; press Enter to add");
+    input.hidden = true;
+    const status = document.createElement("span");
+    status.className = "notes-tag-status";
+    status.setAttribute("aria-live", "polite");
+    const graph = window.logseq.api.get_state_from_store?.("git/current-repo");
+    const state = { uuid, graph, editor, chips, add, input, status, signature: null };
+    stopGesture(add);
+    stopGesture(input);
+    add.addEventListener("click", (event) => {
+      event.preventDefault();
+      input.hidden = !input.hidden;
+      add.setAttribute("aria-expanded", String(!input.hidden));
+      if (!input.hidden) input.focus();
+    }, { signal });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        input.hidden = true;
+        add.setAttribute("aria-expanded", "false");
+        add.focus();
+      }
+      if (event.key !== "Enter" || event.isComposing) return;
+      event.preventDefault();
+      const name = input.value.trim().replace(/^\[\[([^\]]+)\]\]$/, "$1").trim();
+      if (!name) return;
+      if (/\[\[|\]\]|[\r\n]/.test(name)) { status.textContent = "Enter a page name"; return; }
+      status.textContent = "";
+      void change(state, name, true);
+    }, { signal });
+    editor.append(chips, add, input, status);
+    element.append(editor);
+    element.classList.add("notes-tag-property");
+    states.set(element, state);
+    return state;
+  };
+  const refresh = async () => {
+    timer = null;
+    if (signal.aborted) return;
+    if (running) { rerun = true; return; }
+    const api = window.logseq?.api;
+    if (!api?.get_block || !api?.update_block) return;
+    running = true;
+    const graph = api.get_state_from_store?.("git/current-repo");
+    try {
+      const active = new Set();
+      const blocks = new Map();
+      for (const element of document.querySelectorAll(".block-properties .page-property-value")) {
+        const row = element.parentElement;
+        const key = row.querySelector(".page-property-key");
+        const name = (key?.getAttribute("data-ref") || key?.querySelector("[data-ref]")?.getAttribute("data-ref") ||
+          key?.textContent.replace(/:\s*$/, "").trim() || "").toLowerCase();
+        const host = element.closest(".ls-block[blockid]");
+        const uuid = host?.getAttribute("blockid");
+        if (name !== "tags" || !uuid || host.querySelector("textarea")) continue;
+        if (!blocks.has(uuid)) blocks.set(uuid, api.get_block(uuid));
+        const block = await blocks.get(uuid);
+        if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
+        if (!element.isConnected || host.getAttribute("blockid") !== uuid) continue;
+        const match = block?.content?.match(line);
+        if (!match) continue;
+        active.add(element);
+        let state = states.get(element);
+        if (state && (state.uuid !== uuid || state.graph !== graph || !state.editor.isConnected)) {
+          remove(element, state);
+          state = null;
+        }
+        if (!state) state = mount(element, uuid);
+        if (saving.has(uuid)) continue;
+        const tags = parse(match[2]);
+        const signature = JSON.stringify(tags);
+        if (state.signature === signature) continue;
+        state.chips.replaceChildren();
+        for (const tag of tags) {
+          const chip = document.createElement("span");
+          chip.className = "notes-tag-chip";
+          const label = document.createElement("span");
+          label.textContent = tag;
+          const minus = document.createElement("button");
+          minus.type = "button";
+          minus.className = "notes-tag-action";
+          minus.textContent = "−";
+          minus.setAttribute("aria-label", `Remove tag ${tag}`);
+          minus.title = `Remove ${tag}`;
+          stopGesture(minus);
+          minus.addEventListener("click", (event) => {
+            event.preventDefault();
+            void change(state, tag, false);
+          }, { signal });
+          chip.append(label, minus);
+          state.chips.append(chip);
+        }
+        state.signature = signature;
+      }
+      for (const [element, state] of states) if (!active.has(element)) remove(element, state);
+    } catch (error) { console.warn("Tag properties:", error); }
+    finally {
+      running = false;
+      if (rerun && !signal.aborted) { rerun = false; schedule(); }
+    }
+  };
+  const schedule = () => {
+    if (!signal.aborted && timer === null) timer = setTimeout(refresh, 80);
+  };
+  const observer = new MutationObserver((changes) => {
+    if (changes.some(({ target, addedNodes }) => {
+      const element = target.nodeType === 1 ? target : target.parentElement;
+      if (element?.closest(".notes-tag-editor")) return false;
+      return element?.closest(".block-properties, .ls-block") ||
+        [...addedNodes].some((node) => node.nodeType === 1 &&
+          (node.matches(".block-properties") || node.querySelector(".block-properties")));
+    }) || [...states.keys()].some((element) => !element.isConnected)) schedule();
+  });
+  observer.observe(document.body, { childList: true, subtree: true, characterData: true,
+    attributes: true, attributeFilter: ["blockid", "data-ref"] });
+  window.addEventListener("hashchange", schedule, { signal });
+  signal.addEventListener("abort", () => {
+    observer.disconnect();
+    if (timer !== null) clearTimeout(timer);
+    for (const [element, state] of states) remove(element, state);
   }, { once: true });
   void refresh();
 })();

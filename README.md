@@ -20,6 +20,7 @@ require adjustments. Database graphs are not supported.
 - Block search and checklist filters: All, Unchecked, and Checked.
 - `CHECK` / `CHECKED` rendered as interactive checkboxes with a distinct color.
 - Boolean properties displayed as checkboxes, including in reading mode.
+- Tag properties displayed as pills with add and remove buttons.
 - Reading mode prevents text editing while preserving navigation, folding, and
   checkboxes.
 - Shared catalog styling and search across visible fields.
@@ -66,6 +67,12 @@ state; reloading resets these sections to expanded.
   In page properties, lock the whole page. On a block, lock that block and all
   descendants. A `false` value cannot override a locked page or ancestor.
   Navigation, folding, checkboxes, and property switches remain available.
+
+- `tags:: [[Page]], [[Another page]]`
+
+  Show tags as pills in the property panel. Use `−` to remove a tag or `+` to
+  enter a page name, then press Enter. Clicking outside these controls keeps
+  Logseq's normal property editing behavior. Buttons also work in reading mode.
 
 - `searchable:: true`
 

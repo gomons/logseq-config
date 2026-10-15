@@ -689,3 +689,88 @@ div.flex-1.page.relative > :is(
   border-color: var(--notes-check-color);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 8 3 3 5-6' fill='none' stroke='%2300a8b5' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
+
+/* Native tag values remain the property editor's click target. */
+.block-properties div:has(> .notes-tag-property) {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.page-property-value.notes-tag-property {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 0;
+}
+.page-property-value.notes-tag-property > :not(.notes-tag-editor) {
+  display: none;
+}
+.notes-tag-editor {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 1rem;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+.notes-tag-chips {
+  display: contents;
+}
+.notes-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 100%;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem 0.05rem 0.7rem;
+  background: var(--ls-primary-background-color);
+  color: var(--ls-link-text-color);
+}
+.notes-tag-chip > span {
+  overflow-wrap: anywhere;
+}
+.notes-tag-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ls-secondary-text-color);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.notes-tag-action:hover {
+  background: var(--ls-tertiary-background-color);
+  color: var(--ls-primary-text-color);
+}
+.notes-tag-action:focus-visible,
+.notes-tag-input:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 2px;
+}
+.notes-tag-input {
+  min-width: 0;
+  width: 12rem;
+  max-width: 100%;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 4px;
+  background: var(--ls-primary-background-color);
+  color: var(--ls-primary-text-color);
+  font: inherit;
+}
+.notes-tag-input[hidden] {
+  display: none;
+}
+.notes-tag-status {
+  font-size: 0.8rem;
+  color: var(--ls-secondary-text-color);
+}
