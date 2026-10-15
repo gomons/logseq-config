@@ -525,6 +525,19 @@ div.flex-1.page.relative > :is(
   display: block;
   line-height: 1;
 }
+#head .button.icon > .ui__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  line-height: 0;
+}
+#head .button.icon > .ui__icon > svg {
+  display: block;
+  flex-shrink: 0;
+}
 #head .notes-toolbar-actions {
   display: flex;
   align-items: center;
@@ -567,7 +580,19 @@ div.flex-1.page.relative > :is(
   stroke-width: 2;
   fill: none;
 }
-/* Native icon glyphs have different internal fields; match Home's ink height. */
+/* Cover SVG icons and Logseq's icon-font fallback. */
+#head .ls-icon-home > svg {
+  width: 20px;
+  height: 20px;
+}
+#head .ls-icon-layout-sidebar-right > svg {
+  width: 22.25px;
+  height: 22.25px;
+}
+#head .ls-icon-menu-2 > svg {
+  width: 28.6px;
+  height: 28.6px;
+}
 #head #left-menu .ti-menu-2 {
   font-size: 24.1px !important;
 }
