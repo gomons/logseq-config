@@ -79,21 +79,6 @@ div.flex-1.page.relative > :is(
 .notes-toolbar-navigation > [hidden] {
   display: none !important;
 }
-#head .notes-toolbar-navigation > .button {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  color: var(--ls-secondary-text-color);
-  text-decoration: none;
-  touch-action: manipulation;
-  -webkit-app-region: no-drag;
-}
-#head .notes-toolbar-navigation svg {
-  width: 24px;
-  height: 24px;
-  display: block;
-}
 #head .notes-contents-shortcut {
   -webkit-tap-highlight-color: transparent;
 }
@@ -508,6 +493,38 @@ div.flex-1.page.relative > :is(
 }
 
 /* Native toolbar actions share Home's color and spacing. */
+#head > .r,
+#head > .r .flex,
+#head .notes-toolbar-actions {
+  align-items: center;
+  gap: 4px;
+}
+#head > .r {
+  padding-right: 8px;
+  font-size: 0;
+  line-height: 1;
+}
+#head > .r > div {
+  display: flex;
+  align-items: center;
+}
+#head > .r .button.icon {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+#head > .r .button.icon > :is(svg, i) {
+  display: block;
+  line-height: 1;
+}
 #head .notes-toolbar-actions {
   display: flex;
   align-items: center;
@@ -518,7 +535,7 @@ div.flex-1.page.relative > :is(
   box-sizing: border-box;
   width: 32px;
   height: 32px;
-  margin: 0 0.25rem;
+  margin: 0;
   padding: 4px;
   flex-shrink: 0;
   align-items: center;
@@ -544,7 +561,49 @@ div.flex-1.page.relative > :is(
 #head .notes-toolbar-actions .notes-page-favorite svg {
   width: 22px;
   height: 22px;
+  stroke-width: 2;
   fill: none;
+}
+/* One mobile spacing system for native and custom header controls. */
+@media (max-width: 640px) {
+  #head {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 8px;
+    box-sizing: border-box;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  #head > .l,
+  #head > .r {
+    min-width: 0;
+    flex: 0 0 auto;
+    gap: 4px;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  #head > .r {
+    justify-self: stretch;
+    justify-content: flex-end;
+  }
+  #head :is(.l, .r) .flex,
+  #head .notes-toolbar-actions {
+    gap: 4px;
+    align-items: center;
+  }
+  #head :is(.l, .r) .button.icon {
+    display: inline-flex;
+    box-sizing: border-box;
+    flex: 0 0 32px;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+    margin: 0;
+  }
 }
 #head .notes-toolbar-actions .notes-page-favorite[aria-pressed="true"] svg {
   fill: currentColor;
