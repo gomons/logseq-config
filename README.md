@@ -63,7 +63,9 @@ state; reloading resets these sections to expanded.
 
 - `read-only:: true`
 
-  Enable reading mode. Store in the page properties.
+  In page properties, lock the whole page. On a block, lock that block and all
+  descendants. A `false` value cannot override a locked page or ancestor.
+  Navigation, folding, checkboxes, and property switches remain available.
 
 - `searchable:: true`
 

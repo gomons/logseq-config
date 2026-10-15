@@ -326,7 +326,7 @@ window.notesFeatureEnabled = (key) => {
     })) schedule();
   });
   observer.observe(document.body, {
-    childList: true, subtree: true, attributes: true, attributeFilter: ["data-ref"],
+    childList: true, subtree: true, attributes: true, attributeFilter: ["data-ref", "blockid"],
   });
   window.addEventListener("hashchange", schedule, { signal });
   signal.addEventListener("abort", () => {
@@ -578,7 +578,7 @@ window.notesFeatureEnabled = (key) => {
   render();
 })();
 
-/* Per-page reading mode. Stored in the page's preamble.
+/* Reading mode inherits page and ancestor block locks.
    Stop Logseq's delegated edit handlers, but preserve browser text selection. */
 (() => {
   window.notesReadMode?.abort();
@@ -611,22 +611,20 @@ window.notesFeatureEnabled = (key) => {
     block?.content?.match(/^read-only::[ \t]*(true|false)[ \t]*$/im)?.[1] ??
     block?.properties?.[key] ??
     block?.properties?.readOnly;
-  // A first block may contain a query after its properties, and the native API
-  // does not always expose pre-block? immediately after reindexing/insertion.
-  const preamble = (blocks) =>
-    blocks.find((b) => b.preBlock || b["pre-block?"]) ||
-    (/^[\w-]+::/.test(blocks[0]?.content?.trimStart() || "")
-      ? blocks[0]
-      : null);
   const read = async (name) => {
     const page = await api().get_page(name);
     const blocks = (await api().get_page_blocks_tree(name)) || [];
-    const holder = preamble(blocks);
-    return {
-      blocks,
-      holder,
-      locked: truth(holder ? property(holder) : property(page)),
+    // A normal first block with properties still locks only its own subtree.
+    const holder = blocks.find((block) => block.preBlock || block["pre-block?"]);
+    const locked = truth(property(page)) || truth(property(holder));
+    const blockLocks = new Map();
+    const visit = (block, inherited) => {
+      const blocked = inherited || truth(property(block));
+      blockLocks.set(String(block.uuid), blocked);
+      for (const child of block.children || []) visit(child, blocked);
     };
+    for (const block of blocks) visit(block, locked);
+    return { locked, blockLocks };
   };
   const paint = (page, locked) => {
     if (locked && !page.classList.contains("notes-read-only"))
@@ -660,8 +658,16 @@ window.notesFeatureEnabled = (key) => {
         );
         name = title?.textContent.trim();
       }
-      if (!title || !name || !(await api().get_page(name))) continue;
-      if (signal.aborted || !title.isConnected || !page.contains(title)) continue;
+      // Block-focused pages and sidebar blocks may have no page heading.
+      if (name && !(await api().get_page(name))) name = null;
+      if (!name) {
+        const uuid = page.querySelector(".ls-block[blockid]")?.getAttribute("blockid");
+        const block = uuid && await api().get_block?.(uuid);
+        const owner = block?.page && await api().get_page(block.page.id || block.page);
+        name = owner?.name || owner?.originalName;
+      }
+      if (!name) continue;
+      if (signal.aborted || !page.isConnected || (title && !page.contains(title))) continue;
       let state = states.get(page);
       if (state?.busy && state.name === name) continue;
       state = { name, busy: true };
@@ -670,6 +676,11 @@ window.notesFeatureEnabled = (key) => {
         const info = await read(name);
         if (!signal.aborted && page.isConnected && states.get(page) === state) {
           paint(page, info.locked);
+          for (const block of page.querySelectorAll(".ls-block[blockid]")) {
+            if (block.closest(".page, .journal-item, .sidebar-item") !== page &&
+                !page.matches(".journal-item, .sidebar-item")) continue;
+            paint(block, info.blockLocks.get(block.getAttribute("blockid")) || false);
+          }
         }
       } catch (error) {
         console.warn("Reading mode:", error);
@@ -792,11 +803,12 @@ window.notesFeatureEnabled = (key) => {
     }, 150);
   };
   const metadata = ".ls-page-title, .journal-title, .sidebar-item-header, .block-properties";
-  const mounts = ".page, .journal-item, .sidebar-item, " + metadata;
+  const mounts = ".page, .journal-item, .sidebar-item, .ls-block, " + metadata;
   const observer = new MutationObserver((changes) => {
     if (changes.some((change) => {
       const element = change.target.nodeType === 1 ? change.target : change.target.parentElement;
       return element?.closest(metadata) ||
+        (change.type === "attributes" && element?.matches(".ls-block")) ||
         [...change.addedNodes, ...change.removedNodes].some((node) =>
           node.nodeType === 1 && (node.matches(mounts) || node.querySelector(mounts)));
     })) schedule();
