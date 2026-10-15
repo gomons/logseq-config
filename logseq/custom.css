@@ -494,7 +494,7 @@ div.flex-1.page.relative > :is(
 
 /* Native toolbar actions share Home's color and spacing. */
 #head > .r,
-#head > .r .flex,
+#head > .r > .flex,
 #head .notes-toolbar-actions {
   align-items: center;
   gap: 4px;
@@ -507,6 +507,14 @@ div.flex-1.page.relative > :is(
 #head > .r > div {
   display: flex;
   align-items: center;
+}
+#head > :is(.l, .r) .ui__dropdown-trigger {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+}
+#head .ui__dropdown-trigger > .dropdown-wrapper {
+  top: 100%;
 }
 #head > .r .button.icon {
   display: inline-flex;
@@ -589,12 +597,13 @@ div.flex-1.page.relative > :is(
   width: 22.25px;
   height: 22.25px;
 }
-#head .ls-icon-menu-2 > svg {
-  width: 28.6px;
-  height: 28.6px;
+#head #left-menu svg,
+#head .ls-icon-chevron-left > svg {
+  width: 24px;
+  height: 24px;
 }
 #head #left-menu .ti-menu-2 {
-  font-size: 24.1px !important;
+  font-size: 20px !important;
 }
 #head .toggle-right-sidebar .ti-layout-sidebar-right {
   font-size: 21.52px !important;
@@ -619,11 +628,23 @@ div.flex-1.page.relative > :is(
     margin-left: 0;
     margin-right: 0;
   }
+  #head > .l {
+    font-size: 0;
+    line-height: 1;
+    align-self: stretch;
+    height: auto;
+    align-items: center;
+  }
+  #head > .l > div {
+    display: flex;
+    align-items: center;
+  }
   #head > .r {
     justify-self: stretch;
     justify-content: flex-end;
   }
-  #head :is(.l, .r) .flex,
+  #head > .l .flex,
+  #head > .r > .flex,
   #head .notes-toolbar-actions {
     gap: 4px;
     align-items: center;
@@ -638,6 +659,8 @@ div.flex-1.page.relative > :is(
     height: 32px;
     padding: 4px;
     margin: 0;
+    font-size: 20px;
+    line-height: 1;
   }
 }
 #head .notes-toolbar-actions .notes-page-favorite[aria-pressed="true"] svg {
