@@ -21,6 +21,7 @@ require adjustments. Database graphs are not supported.
 - `CHECK` / `CHECKED` rendered as interactive checkboxes with a distinct color.
 - Boolean properties displayed as checkboxes, including in reading mode.
 - Tag properties displayed as pills with add and remove buttons.
+- Aliases displayed as text with add and remove buttons.
 - Reading mode prevents text editing while preserving navigation, folding, and
   checkboxes.
 - Shared catalog styling and search across visible fields.
@@ -71,8 +72,17 @@ state; reloading resets these sections to expanded.
 - `tags:: [[Page]], [[Another page]]`
 
   Show tags as pills in the property panel. Use `−` to remove a tag or `+` to
-  enter a page name, then press Enter. Clicking outside these controls keeps
-  Logseq's normal property editing behavior. Buttons also work in reading mode.
+  enter a page name, then press Enter or `✓`. Clicking outside these controls
+  keeps
+  Logseq's normal property editing behavior. Plain names gain `[[…]]`; existing
+  `#tag` and `[[Page]]` forms are preserved. Buttons also work in reading mode.
+
+- `alias:: Name, Another name`
+
+  Show aliases with `−` to remove and `+` to add. Enter or `✓` confirms a new
+  alias. Plain names stay text; explicit `#tag` and `[[Page]]` forms are
+  preserved and clickable. The same controls support `aliases::` and work in
+  reading mode.
 
 - `searchable:: true`
 

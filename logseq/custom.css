@@ -695,6 +695,7 @@ div.flex-1.page.relative > :is(
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  padding-block: 0.15rem;
 }
 .page-property-value.notes-tag-property {
   min-width: 0;
@@ -708,7 +709,7 @@ div.flex-1.page.relative > :is(
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.4rem 0.55rem;
   font-size: 1rem;
   line-height: 1.25;
   vertical-align: middle;
@@ -723,12 +724,26 @@ div.flex-1.page.relative > :is(
   max-width: 100%;
   border: 1px solid var(--ls-border-color);
   border-radius: 999px;
-  padding: 0.05rem 0.35rem 0.05rem 0.7rem;
+  padding: 0.05rem 0.3rem 0.05rem 0.5rem;
   background: var(--ls-primary-background-color);
   color: var(--ls-link-text-color);
 }
-.notes-tag-chip > span {
+.notes-tag-chip > :is(span, a) {
+  min-width: 0;
   overflow-wrap: anywhere;
+}
+.notes-tag-chip.notes-alias-item {
+  border: 1px dashed var(--ls-secondary-text-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ls-primary-text-color);
+}
+.notes-alias-item > .notes-tag-action {
+  opacity: 0.65;
+}
+.notes-alias-item > .notes-tag-action:hover,
+.notes-alias-item > .notes-tag-action:focus-visible {
+  opacity: 1;
 }
 .notes-tag-action {
   display: inline-flex;
@@ -767,7 +782,8 @@ div.flex-1.page.relative > :is(
   color: var(--ls-primary-text-color);
   font: inherit;
 }
-.notes-tag-input[hidden] {
+.notes-tag-input[hidden],
+.notes-tag-action[hidden] {
   display: none;
 }
 .notes-tag-status {
