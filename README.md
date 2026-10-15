@@ -13,6 +13,8 @@ require adjustments. Database graphs are not supported.
 - On mobile, the nearest parent is visible; earlier levels open in a popup.
 - Search for Subpages, Tagged pages, and Linked References, arranged below page
   content.
+- Contents, Subpages, and Tagged pages match page aliases and show the matching
+  alias below the result.
 - Saved collapse state for these sections, with search hidden while collapsed.
 - Hide Unlinked References and disable page previews on hover.
 - Collapsible Contents trees, tag clouds, and Favorites lists via block
@@ -98,7 +100,7 @@ state; reloading resets these sections to expanded.
 
   Render a page tree inside this block, starting with pages tagged
   `[[Contents]]` and following namespace children. Search matches the final page
-  name and shows clickable paths.
+  name or an alias and shows clickable paths, with a matched alias below.
 
 - `auto-favorites:: true`
 

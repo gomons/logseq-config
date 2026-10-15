@@ -19,6 +19,24 @@ window.notesFeatureEnabled = (key) => {
   return api.get_state_from_store([...path, key]) !== false;
 };
 
+/* Alias lookups share the page snapshot already read by automatic Contents. */
+window.notesPageAliasIndex = null;
+window.notesMatchingAlias = (link, terms) => {
+  if (!terms.length) return "";
+  const index = window.notesPageAliasIndex;
+  const graph = window.logseq?.api?.get_state_from_store?.("git/current-repo");
+  if (!index || index.graph !== graph) return "";
+  const destination = link?.getAttribute("href") || link?.querySelector("a:last-of-type")?.getAttribute("href");
+  if (!destination?.includes("#/page/")) return "";
+  let name;
+  try { name = decodeURIComponent(destination.split("#/page/")[1]).toLowerCase(); }
+  catch { return ""; }
+  return (index.pages.get(name) || []).find((alias) => {
+    const text = alias.normalize("NFKC").toLocaleLowerCase().replace(/ё/g, "е");
+    return terms.every((term) => text.includes(term));
+  }) || "";
+};
+
 /* Hide Unlinked References only when enabled in config.edn. */
 (() => {
   window.notesUnlinkedReferences?.abort();
@@ -92,8 +110,19 @@ window.notesFeatureEnabled = (key) => {
     panel.querySelectorAll(".notes-navigation-row").forEach((row) => {
       const link = row.querySelector(".notes-navigation-link");
       if (!link) return;
+      const terms = normalize(input.value).trim().split(/\s+/).filter(Boolean);
+      const alias = window.notesMatchingAlias?.(link, terms) || "";
       row.classList.toggle("notes-page-filter-hidden",
-        !matchesSearch(link.dataset.searchText || link.textContent, input.value));
+        !matchesSearch(link.dataset.searchText || link.textContent, input.value) && !alias);
+      let caption = row.querySelector(":scope > .notes-search-alias");
+      if (alias) {
+        if (!caption) {
+          caption = document.createElement("span");
+          caption.className = "notes-search-alias";
+          row.append(caption);
+        }
+        if (caption.textContent !== alias) caption.textContent = alias;
+      } else caption?.remove();
     });
   };
 
@@ -237,6 +266,10 @@ window.notesFeatureEnabled = (key) => {
     searchFields.forEach((input) => input.remove());
     searchFields.clear();
   }, { once: true });
+  window.addEventListener("notes-aliases-changed", () => {
+    document.querySelectorAll(panelSelector).forEach((panel) => pendingPanels.add(panel));
+    if (frame === null) frame = requestAnimationFrame(flush);
+  }, { signal });
   document.querySelectorAll(panelSelector).forEach((panel) => pendingPanels.add(panel));
   flush();
 })();
@@ -1129,8 +1162,10 @@ window.notesSubtreeSearch = new AbortController();
   let timer = null;
   let running = false;
   let rerun = false;
+  let aliasSignature = null;
   const query = `[:find (pull ?page [:block/name :block/original-name
-                    {:block/namespace [:block/name]} {:block/tags [:block/name]}])
+                    {:block/namespace [:block/name]} {:block/tags [:block/name]}
+                    {:block/alias [:block/name :block/original-name]}])
                   :where [?page :block/name]]`;
   const field = (entity, key) => entity?.[key] ?? entity?.[`block/${key}`];
   const enabled = (value) => value === true || String(value).toLowerCase() === "true";
@@ -1253,14 +1288,24 @@ window.notesSubtreeSearch = new AbortController();
     if (!api?.datascript_query) return;
     running = true;
     try {
+      const graph = api.get_state_from_store?.("git/current-repo");
       const rows = await api.datascript_query(query);
-      if (signal.aborted) return;
+      if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
       const pages = (rows || []).map(([page]) => ({
         name: field(page, "name"),
         label: field(page, "original-name") || field(page, "name"),
+        aliases: (field(page, "alias") || []).map((alias) =>
+          field(alias, "original-name") || field(alias, "name")).filter(Boolean),
         parent: field(field(page, "namespace"), "name"),
         tags: (field(page, "tags") || []).map((tag) => field(tag, "name")),
       })).sort((a, b) => a.name.localeCompare(b.name));
+      const aliases = pages.map((page) => [page.name.toLowerCase(), page.aliases]);
+      const nextAliases = JSON.stringify([graph, aliases]);
+      if (nextAliases !== aliasSignature) {
+        aliasSignature = nextAliases;
+        window.notesPageAliasIndex = { graph, pages: new Map(aliases) };
+        window.dispatchEvent(new window.Event("notes-aliases-changed"));
+      }
       const blockRows = await api.datascript_query(blockQuery);
       const candidates = (blockRows || []).map(([block]) => ({
         uuid: field(block, "uuid"),
@@ -1414,7 +1459,9 @@ window.notesSubtreeSearch = new AbortController();
     const rows = [];
     for (const row of state.tree.querySelectorAll("li")) {
       const link = pageLink(row);
-      if (!link || !terms.every((term) => normalize(link.textContent).includes(term))) continue;
+      if (!link) continue;
+      const alias = window.notesMatchingAlias?.(link, terms) || "";
+      if (!alias && !terms.every((term) => normalize(link.textContent).includes(term))) continue;
       const result = document.createElement("li");
       const path = (link.title || link.textContent).split("/");
       path.forEach((name, index) => {
@@ -1427,6 +1474,12 @@ window.notesSubtreeSearch = new AbortController();
           : `#/page/${encodeURIComponent(segment.title.toLocaleLowerCase())}`);
         result.append(segment);
       });
+      if (alias) {
+        const caption = document.createElement("span");
+        caption.className = "notes-search-alias";
+        caption.textContent = alias;
+        result.append(caption);
+      }
       rows.push(result);
     }
     state.results.replaceChildren(...rows);
@@ -1496,6 +1549,9 @@ window.notesSubtreeSearch = new AbortController();
           node.nodeType === Node.ELEMENT_NODE && (node.matches(selector) || node.querySelector(selector)));
     }) && frame === null) frame = requestAnimationFrame(refresh);
   });
+  window.addEventListener("notes-aliases-changed", () => {
+    if (frame === null) frame = requestAnimationFrame(refresh);
+  }, { signal });
   signal.addEventListener("abort", () => {
     observer.disconnect();
     if (frame !== null) cancelAnimationFrame(frame);
@@ -1909,6 +1965,7 @@ window.notesSubtreeSearch = new AbortController();
       state.input.value = "";
       state.input.hidden = true;
       state.confirm.hidden = true;
+      state.entry.hidden = true;
       state.add.setAttribute("aria-expanded", "false");
     } catch (error) {
       state.status.textContent = `Could not update ${state.key}`;
@@ -1943,23 +2000,28 @@ window.notesSubtreeSearch = new AbortController();
     add.setAttribute("aria-expanded", "false");
     const input = document.createElement("input");
     input.type = "text";
+    input.setAttribute("enterkeyhint", "done");
     input.className = "notes-tag-input";
     input.placeholder = kind === "tag" ? "Page name" : "Alias";
     input.setAttribute("aria-label", `New ${kind}; press Enter to add`);
     input.hidden = true;
     const confirm = document.createElement("button");
-    confirm.type = "button";
+    confirm.type = "submit";
     confirm.className = "notes-tag-action";
     confirm.textContent = "✓";
     confirm.title = `Save ${kind}`;
     confirm.setAttribute("aria-label", `Save ${kind}`);
     confirm.hidden = true;
+    const entry = document.createElement("form");
+    entry.className = "notes-tag-entry";
+    entry.hidden = true;
+    entry.append(input, confirm);
     const status = document.createElement("span");
     status.className = "notes-tag-status";
     status.setAttribute("aria-live", "polite");
     const graph = window.logseq.api.get_state_from_store?.("git/current-repo");
     const state = { uuid, graph, key, kind, pattern: propertyLine(key),
-      editor, chips, add, input, confirm, status, signature: null };
+      editor, chips, add, input, confirm, entry, status, signature: null };
     stopGesture(add);
     stopGesture(input);
     stopGesture(confirm);
@@ -1967,6 +2029,7 @@ window.notesSubtreeSearch = new AbortController();
       event.preventDefault();
       input.hidden = !input.hidden;
       confirm.hidden = input.hidden;
+      entry.hidden = input.hidden;
       add.setAttribute("aria-expanded", String(!input.hidden));
       if (!input.hidden) input.focus();
     }, { signal });
@@ -1980,12 +2043,23 @@ window.notesSubtreeSearch = new AbortController();
       status.textContent = "";
       void change(state, name, true);
     };
-    confirm.addEventListener("click", (event) => { event.preventDefault(); submit(); }, { signal });
+    entry.addEventListener("submit", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      submit();
+    }, { signal });
+    input.addEventListener("beforeinput", (event) => {
+      if (!event.isComposing && ["insertLineBreak", "insertParagraph"].includes(event.inputType)) {
+        event.preventDefault();
+        submit();
+      }
+    }, { signal });
     input.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
         input.hidden = true;
         confirm.hidden = true;
+        entry.hidden = true;
         add.setAttribute("aria-expanded", "false");
         add.focus();
       }
@@ -1993,7 +2067,7 @@ window.notesSubtreeSearch = new AbortController();
       event.preventDefault();
       submit();
     }, { signal });
-    editor.append(chips, add, input, confirm, status);
+    editor.append(chips, add, entry, status);
     element.append(editor);
     element.classList.add("notes-tag-property");
     states.set(element, state);
