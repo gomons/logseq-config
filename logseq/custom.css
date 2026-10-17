@@ -22,7 +22,7 @@ div.flex-1.page.relative > :is(
 }
 
 /* Keep full destinations behind short page names. */
-.notes-navigation-row > :not(.notes-navigation-link):not(.notes-search-alias),
+.notes-navigation-row > :not(.notes-navigation-link),
 .notes-navigation-excluded,
 .notes-navigation-empty,
 .notes-page-filter-hidden {
@@ -61,17 +61,6 @@ div.flex-1.page.relative > :is(
   border-radius: 6px;
   background: var(--ls-secondary-background-color);
 }
-.notes-search-alias {
-  display: block;
-  margin-top: 0.1rem;
-  color: var(--ls-secondary-text-color);
-  font-size: 0.85em;
-  line-height: 1.35;
-}
-.notes-navigation-row:has(> .notes-search-alias) {
-  display: block;
-}
-
 /* Place Contents above the page, opposite the native navigation controls. */
 #head:has(> .notes-toolbar-navigation) {
   position: relative;
@@ -280,7 +269,7 @@ div.flex-1.page.relative > :is(
 .notes-contents-tree li {
   margin: 0.35rem 0;
 }
-.notes-contents-tree > .notes-contents-root-pinned:has(+ li:not(.notes-contents-root-pinned)) {
+.notes-contents-tree .notes-contents-page-pinned:has(+ li:not(.notes-contents-page-pinned)) {
   border-bottom: 1px solid var(--ls-border-color);
   padding-bottom: 0.75rem;
   margin-bottom: 0.75rem;
@@ -309,8 +298,14 @@ div.flex-1.page.relative > :is(
 .notes-contents-tree details[open] > summary::before {
   transform: translateY(-70%) rotate(45deg);
 }
-.notes-contents-tree li > a {
+.notes-contents-tree li > :is(a, .notes-contents-path) {
   margin-left: var(--notes-contents-gutter);
+}
+.notes-contents-path {
+  overflow-wrap: anywhere;
+}
+.notes-contents-path-separator {
+  color: var(--ls-secondary-text-color);
 }
 
 /* The tree already includes the tagged roots. */

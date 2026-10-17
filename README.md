@@ -13,8 +13,8 @@ require adjustments. Database graphs are not supported.
 - On mobile, the nearest parent is visible; earlier levels open in a popup.
 - Search for Subpages, Tagged pages, and Linked References, arranged below page
   content.
-- Contents, Subpages, and Tagged pages match page aliases and show the matching
-  alias below the result.
+- Contents, Subpages, and Tagged pages match page aliases without displaying
+  alias captions in search results.
 - Saved collapse state for these sections, with search hidden while collapsed.
 - Hide Unlinked References and disable page previews on hover.
 - Collapsible Contents trees, tag clouds, and Favorites lists via block
@@ -98,17 +98,26 @@ state; reloading resets these sections to expanded.
 
 - `auto-contents:: true`
 
-  Render a page tree inside this block, starting with pages tagged
-  `[[Contents]]` and following namespace children. Search matches the final page
-  name or an alias and shows clickable paths, with a matched alias below.
+  Render file-backed graph pages inside this block, grouped by namespace.
+  No `Contents` tag is required. Search matches leaf names and aliases. Results
+  show clickable paths without alias captions. Clearing search restores
+  the Contents tree.
+  Entries without note files are omitted. Missing namespace levels appear in
+  the next real page's label, without creating extra navigation entries.
+  Journal entries, including files in `journals/`, are excluded from this tree
+  and its search.
+  Files under `logseq/`, `.backup/`, `assets/`, and root `AGENTS.md` or `README.md`
+  are excluded too.
   Tree branches start collapsed; updates preserve manually opened branches.
 
 - `contents-pin:: true` (page property)
 
-  Put this page first among Contents roots, only if it has the `Contents` tag.
-  Pinned and other roots each use alphabetical order. Set `false` or remove
-  the property to restore alphabetical ordering. Child order is unchanged.
-  One horizontal divider separates pinned roots from the rest; pages appear once.
+  Move this page to the top of Pages, from any namespace depth. It keeps its
+  children and is not duplicated in its former branch. Set `false` or remove
+  the property to restore its namespace position. Each group is alphabetical.
+  One horizontal divider separates pinned pages from the rest; pages appear
+  once. Pinned labels show the full page path with `›` between namespace levels.
+  Each path segment is a separate link to that page.
   This uses the existing page query and adds no per-page reads or pin buttons.
 
 - `auto-favorites:: true`

@@ -21,6 +21,7 @@ window.notesFeatureEnabled = (key) => {
 
 /* Alias lookups share the page snapshot already read by automatic Contents. */
 window.notesPageAliasIndex = null;
+window.notesPageSearchIndex = null;
 window.notesAliasesForReference = (reference) => {
   const index = window.notesPageAliasIndex;
   const graph = window.logseq?.api?.get_state_from_store?.("git/current-repo");
@@ -120,15 +121,7 @@ window.notesMatchingAlias = (link, terms) => {
       const alias = window.notesMatchingAlias?.(link, terms) || "";
       row.classList.toggle("notes-page-filter-hidden",
         !matchesSearch(link.dataset.searchText || link.textContent, input.value) && !alias);
-      let caption = row.querySelector(":scope > .notes-search-alias");
-      if (alias) {
-        if (!caption) {
-          caption = document.createElement("span");
-          caption.className = "notes-search-alias";
-          row.append(caption);
-        }
-        if (caption.textContent !== alias) caption.textContent = alias;
-      } else caption?.remove();
+      row.querySelector(":scope > .notes-search-alias")?.remove();
     });
   };
 
@@ -1170,7 +1163,8 @@ window.notesSubtreeSearch = new AbortController();
   let rerun = false;
   let aliasSignature = null;
   const query = `[:find (pull ?page [:block/name :block/original-name :block/properties
-                    {:block/namespace [:block/name]} {:block/tags [:block/name]}
+                    :block/journal? {:block/file [:file/path]}
+                    {:block/namespace [:block/name]}
                     {:block/alias [:block/name :block/original-name]}])
                   :where [?page :block/name]]`;
   const field = (entity, key) => entity?.[key] ?? entity?.[`block/${key}`];
@@ -1252,21 +1246,55 @@ window.notesSubtreeSearch = new AbortController();
   const renderTree = (pages, previous) => {
     const children = new Map();
     const roots = [];
+    const names = new Set(pages.map((page) => page.name));
+    const parents = new Map();
     for (const page of pages) {
-      if (page.tags.includes("contents")) roots.push(page);
-      if (!children.has(page.parent)) children.set(page.parent, []);
-      children.get(page.parent).push(page);
+      let parent = page.parent;
+      while (parent && !names.has(parent))
+        parent = parent.includes("/") ? parent.slice(0, parent.lastIndexOf("/")) : null;
+      if (page.pinned) parent = null;
+      parents.set(page.name, parent);
+      if (!parent) roots.push(page);
+      if (!children.has(parent)) children.set(parent, []);
+      children.get(parent).push(page);
     }
-    roots.sort((a, b) => Number(b.pinned) - Number(a.pinned)
-      || a.name.localeCompare(b.name));
+    const order = (a, b) => Number(b.pinned) - Number(a.pinned)
+      || a.name.localeCompare(b.name);
+    roots.sort(order);
+    for (const siblings of children.values()) siblings.sort(order);
     const open = new Map([...previous?.querySelectorAll("details") || []]
       .map((details) => [details.dataset.page, details.open]));
     const branch = (page, ancestors = new Set()) => {
       const row = document.createElement("li");
+      row.classList.toggle("notes-contents-page-pinned", page.pinned);
       const link = document.createElement("a");
       link.setAttribute("href", `#/page/${encodeURIComponent(page.name)}`);
       link.title = page.label;
-      link.textContent = page.label.split("/").at(-1);
+      const pathLabels = page.label.split("/");
+      const parent = parents.get(page.name);
+      const start = page.pinned ? 0 : parent ? parent.split("/").length : 0;
+      link.textContent = pathLabels.at(-1);
+      let label = link;
+      if (pathLabels.length - start > 1) {
+        label = document.createElement("span");
+        label.className = "notes-contents-path";
+        for (let index = start; index < pathLabels.length; index++) {
+          if (index > start) {
+            const separator = document.createElement("span");
+            separator.className = "notes-contents-path-separator";
+            separator.textContent = " › ";
+            separator.setAttribute("aria-hidden", "true");
+            label.append(separator);
+          }
+          const segment = index === pathLabels.length - 1 ? link : document.createElement("a");
+          if (segment !== link) {
+            segment.textContent = pathLabels[index];
+            segment.title = pathLabels.slice(0, index + 1).join("/");
+            segment.href = `#/page/${encodeURIComponent(page.name.split("/").slice(0, index + 1).join("/"))}`;
+          }
+          label.append(segment);
+        }
+      }
       const descendants = (children.get(page.name) || [])
         .filter((child) => !ancestors.has(child.name));
       if (descendants.length) {
@@ -1274,20 +1302,19 @@ window.notesSubtreeSearch = new AbortController();
         details.dataset.page = page.name;
         details.open = open.get(page.name) ?? false;
         const summary = document.createElement("summary");
-        summary.append(link);
+        summary.append(label);
         const list = document.createElement("ul");
         const path = new Set([...ancestors, page.name]);
         descendants.forEach((child) => list.append(branch(child, path)));
         details.append(summary, list);
         row.append(details);
-      } else row.append(link);
+      } else row.append(label);
       return row;
     };
     const tree = document.createElement("ul");
     tree.className = "notes-contents-tree";
     roots.forEach((page) => {
       const row = branch(page);
-      row.classList.toggle("notes-contents-root-pinned", page.pinned);
       tree.append(row);
     });
     return tree;
@@ -1303,20 +1330,29 @@ window.notesSubtreeSearch = new AbortController();
       const graph = api.get_state_from_store?.("git/current-repo");
       const rows = await api.datascript_query(query);
       if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
-      const pages = (rows || []).map(([page]) => ({
+      // Pages lists note files, not implicit entities created by references.
+      const pages = (rows || []).filter(([page]) => {
+        const file = field(page, "file");
+        const path = String(file?.path ?? file?.["file/path"] ?? "").replace(/\\/g, "/");
+        if (!path) return false;
+        if (/(^|\/)(?:logseq|\.backup|assets)\//i.test(path)
+          || /^(?:AGENTS|README)\.md$/i.test(path)) return false;
+        return !enabled(field(page, "journal?")) && !/(^|\/)journals\//i.test(path);
+      }).map(([page]) => ({
         name: field(page, "name"),
         label: field(page, "original-name") || field(page, "name"),
         aliases: (field(page, "alias") || []).map((alias) =>
           field(alias, "original-name") || field(alias, "name")).filter(Boolean),
         parent: field(field(page, "namespace"), "name"),
         pinned: enabled(field(page, "properties")?.["contents-pin"]),
-        tags: (field(page, "tags") || []).map((tag) => field(tag, "name")),
       })).sort((a, b) => a.name.localeCompare(b.name));
       const aliases = pages.map((page) => [page.name.toLowerCase(), page.aliases]);
-      const nextAliases = JSON.stringify([graph, aliases]);
+      const nextAliases = JSON.stringify([graph, pages.map(({ name, label, aliases }) =>
+        [name, label, aliases])]);
       if (nextAliases !== aliasSignature) {
         aliasSignature = nextAliases;
         window.notesPageAliasIndex = { graph, pages: new Map(aliases) };
+        window.notesPageSearchIndex = { graph, pages };
         window.dispatchEvent(new window.Event("notes-aliases-changed"));
       }
       const blockRows = await api.datascript_query(blockQuery);
@@ -1439,7 +1475,10 @@ window.notesSubtreeSearch = new AbortController();
   const states = new Map();
   let frame = null;
   const normalize = (text) => text.normalize("NFKC").toLocaleLowerCase().replace(/ё/g, "е");
-  const pageLink = (row) => row.querySelector(":scope > a, :scope > details > summary > a");
+  const pageLink = (row) => row.querySelector(
+    ":scope > a, :scope > details > summary > a, "
+    + ":scope > .notes-contents-path > a:last-of-type, "
+    + ":scope > details > summary > .notes-contents-path > a:last-of-type");
   const catalogRows = (catalog) => catalog.querySelectorAll(":scope > .notes-catalog-item");
   const filterCatalog = (catalog, terms) => {
     let count = 0;
@@ -1476,29 +1515,31 @@ window.notesSubtreeSearch = new AbortController();
     if (!terms.length) return;
     state.tree.classList.add("notes-contents-search-hidden");
     const rows = [];
-    for (const row of state.tree.querySelectorAll("li")) {
-      const link = pageLink(row);
-      if (!link) continue;
-      const alias = window.notesMatchingAlias?.(link, terms) || "";
-      if (!alias && !terms.every((term) => normalize(link.textContent).includes(term))) continue;
+    const index = window.notesPageSearchIndex;
+    const graph = window.logseq?.api?.get_state_from_store?.("git/current-repo");
+    const pages = index ? (index.graph === graph ? index.pages : [])
+      : [...state.tree.querySelectorAll("li")].map(pageLink).filter(Boolean).map((link) => ({
+        name: decodeURIComponent(link.getAttribute("href").split("#/page/")[1]),
+        label: link.title || link.textContent,
+        aliases: window.notesAliasesForReference?.(link) || [],
+      }));
+    for (const page of pages) {
+      const alias = page.aliases.find((value) =>
+        terms.every((term) => normalize(value).includes(term))) || "";
+      const leaf = normalize(page.label.split("/").at(-1));
+      if (!alias && !terms.every((term) => leaf.includes(term))) continue;
       const result = document.createElement("li");
-      const path = (link.title || link.textContent).split("/");
+      const path = page.label.split("/");
       path.forEach((name, index) => {
         if (index) result.append(document.createTextNode(" / "));
         const segment = document.createElement("a");
         segment.textContent = name;
         segment.title = path.slice(0, index + 1).join("/");
         segment.setAttribute("href", index === path.length - 1
-          ? link.getAttribute("href")
+          ? `#/page/${encodeURIComponent(page.name)}`
           : `#/page/${encodeURIComponent(segment.title.toLocaleLowerCase())}`);
         result.append(segment);
       });
-      if (alias) {
-        const caption = document.createElement("span");
-        caption.className = "notes-search-alias";
-        caption.textContent = alias;
-        result.append(caption);
-      }
       rows.push(result);
     }
     state.results.replaceChildren(...rows);
@@ -1512,7 +1553,7 @@ window.notesSubtreeSearch = new AbortController();
     input.className = "notes-page-list-filter";
     const catalog = tree.matches(".notes-catalog");
     input.placeholder = catalog ? "Search…" : "Search pages…";
-    input.setAttribute("aria-label", catalog ? "Search visible catalog fields" : "Search Contents pages");
+    input.setAttribute("aria-label", catalog ? "Search visible catalog fields" : "Search all pages");
     input.autocomplete = "off";
     input.value = previous?.input.value || "";
     const status = document.createElement("span");
