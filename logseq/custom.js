@@ -1259,7 +1259,7 @@ window.notesSubtreeSearch = new AbortController();
     }
     const open = new Map([...previous?.querySelectorAll("details") || []]
       .map((details) => [details.dataset.page, details.open]));
-    const branch = (page, root, ancestors = new Set()) => {
+    const branch = (page, ancestors = new Set()) => {
       const row = document.createElement("li");
       const link = document.createElement("a");
       link.setAttribute("href", `#/page/${encodeURIComponent(page.name)}`);
@@ -1270,12 +1270,12 @@ window.notesSubtreeSearch = new AbortController();
       if (descendants.length) {
         const details = document.createElement("details");
         details.dataset.page = page.name;
-        details.open = open.get(page.name) ?? root;
+        details.open = open.get(page.name) ?? false;
         const summary = document.createElement("summary");
         summary.append(link);
         const list = document.createElement("ul");
         const path = new Set([...ancestors, page.name]);
-        descendants.forEach((child) => list.append(branch(child, false, path)));
+        descendants.forEach((child) => list.append(branch(child, path)));
         details.append(summary, list);
         row.append(details);
       } else row.append(link);
@@ -1283,7 +1283,7 @@ window.notesSubtreeSearch = new AbortController();
     };
     const tree = document.createElement("ul");
     tree.className = "notes-contents-tree";
-    roots.forEach((page) => tree.append(branch(page, true)));
+    roots.forEach((page) => tree.append(branch(page)));
     return tree;
   };
   const refresh = async () => {

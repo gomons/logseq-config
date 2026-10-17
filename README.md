@@ -101,6 +101,7 @@ state; reloading resets these sections to expanded.
   Render a page tree inside this block, starting with pages tagged
   `[[Contents]]` and following namespace children. Search matches the final page
   name or an alias and shows clickable paths, with a matched alias below.
+  Tree branches start collapsed; updates preserve manually opened branches.
 
 - `auto-favorites:: true`
 
