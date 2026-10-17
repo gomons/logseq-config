@@ -1345,14 +1345,16 @@ window.notesSubtreeSearch = new AbortController();
           field(alias, "original-name") || field(alias, "name")).filter(Boolean),
         parent: field(field(page, "namespace"), "name"),
         pinned: enabled(field(page, "properties")?.["contents-pin"]),
+        ignored: enabled(field(page, "properties")?.["contents-ignore"]),
       })).sort((a, b) => a.name.localeCompare(b.name));
+      const visiblePages = pages.filter((page) => !page.ignored);
       const aliases = pages.map((page) => [page.name.toLowerCase(), page.aliases]);
-      const nextAliases = JSON.stringify([graph, pages.map(({ name, label, aliases }) =>
-        [name, label, aliases])]);
+      const nextAliases = JSON.stringify([graph, pages.map(({ name, label, aliases, ignored }) =>
+        [name, label, aliases, ignored])]);
       if (nextAliases !== aliasSignature) {
         aliasSignature = nextAliases;
         window.notesPageAliasIndex = { graph, pages: new Map(aliases) };
-        window.notesPageSearchIndex = { graph, pages };
+        window.notesPageSearchIndex = { graph, pages: visiblePages };
         window.dispatchEvent(new window.Event("notes-aliases-changed"));
       }
       const blockRows = await api.datascript_query(blockQuery);
@@ -1422,7 +1424,7 @@ window.notesSubtreeSearch = new AbortController();
               state.section.insertBefore(group.element, position);
             if (group.signature === signature) continue;
             const old = group.element.querySelector(".notes-contents-tree, .notes-tag-cloud");
-            const body = key === "pages" ? renderTree(pages, old)
+            const body = key === "pages" ? renderTree(visiblePages, old)
               : key === "favorites" ? renderFavorites(favorites) : renderTags(tags);
             if (old) old.replaceWith(body);
             else group.element.append(body);

@@ -110,6 +110,12 @@ state; reloading resets these sections to expanded.
   are excluded too.
   Tree branches start collapsed; updates preserve manually opened branches.
 
+- `contents-ignore:: true` (page property)
+
+  Hide this page from the Pages tree and its search. Its children remain
+  available under the nearest visible namespace ancestor. Set `false` or
+  remove the property to show the page again. Favorites are unaffected.
+
 - `contents-pin:: true` (page property)
 
   Move this page to the top of Pages, from any namespace depth. It keeps its
