@@ -110,7 +110,7 @@ state; reloading resets these sections to expanded.
   are excluded too.
   Tree branches start collapsed; updates preserve manually opened branches.
 
-- `contents-ignore:: true` (page property)
+- `contents-exclude:: true` (page property)
 
   Hide this page from the Pages tree and its search. Its children remain
   available under the nearest visible namespace ancestor. Set `false` or

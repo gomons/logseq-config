@@ -1345,7 +1345,7 @@ window.notesSubtreeSearch = new AbortController();
           field(alias, "original-name") || field(alias, "name")).filter(Boolean),
         parent: field(field(page, "namespace"), "name"),
         pinned: enabled(field(page, "properties")?.["contents-pin"]),
-        ignored: enabled(field(page, "properties")?.["contents-ignore"]),
+        ignored: enabled(field(page, "properties")?.["contents-exclude"]),
       })).sort((a, b) => a.name.localeCompare(b.name));
       const visiblePages = pages.filter((page) => !page.ignored);
       const aliases = pages.map((page) => [page.name.toLowerCase(), page.aliases]);
