@@ -280,6 +280,11 @@ div.flex-1.page.relative > :is(
 .notes-contents-tree li {
   margin: 0.35rem 0;
 }
+.notes-contents-tree > .notes-contents-root-pinned:has(+ li:not(.notes-contents-root-pinned)) {
+  border-bottom: 1px solid var(--ls-border-color);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
 .notes-contents-tree summary {
   position: relative;
   list-style: none;

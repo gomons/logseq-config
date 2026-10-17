@@ -1169,7 +1169,7 @@ window.notesSubtreeSearch = new AbortController();
   let running = false;
   let rerun = false;
   let aliasSignature = null;
-  const query = `[:find (pull ?page [:block/name :block/original-name
+  const query = `[:find (pull ?page [:block/name :block/original-name :block/properties
                     {:block/namespace [:block/name]} {:block/tags [:block/name]}
                     {:block/alias [:block/name :block/original-name]}])
                   :where [?page :block/name]]`;
@@ -1257,6 +1257,8 @@ window.notesSubtreeSearch = new AbortController();
       if (!children.has(page.parent)) children.set(page.parent, []);
       children.get(page.parent).push(page);
     }
+    roots.sort((a, b) => Number(b.pinned) - Number(a.pinned)
+      || a.name.localeCompare(b.name));
     const open = new Map([...previous?.querySelectorAll("details") || []]
       .map((details) => [details.dataset.page, details.open]));
     const branch = (page, ancestors = new Set()) => {
@@ -1283,7 +1285,11 @@ window.notesSubtreeSearch = new AbortController();
     };
     const tree = document.createElement("ul");
     tree.className = "notes-contents-tree";
-    roots.forEach((page) => tree.append(branch(page)));
+    roots.forEach((page) => {
+      const row = branch(page);
+      row.classList.toggle("notes-contents-root-pinned", page.pinned);
+      tree.append(row);
+    });
     return tree;
   };
   const refresh = async () => {
@@ -1303,6 +1309,7 @@ window.notesSubtreeSearch = new AbortController();
         aliases: (field(page, "alias") || []).map((alias) =>
           field(alias, "original-name") || field(alias, "name")).filter(Boolean),
         parent: field(field(page, "namespace"), "name"),
+        pinned: enabled(field(page, "properties")?.["contents-pin"]),
         tags: (field(page, "tags") || []).map((tag) => field(tag, "name")),
       })).sort((a, b) => a.name.localeCompare(b.name));
       const aliases = pages.map((page) => [page.name.toLowerCase(), page.aliases]);

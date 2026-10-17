@@ -103,6 +103,14 @@ state; reloading resets these sections to expanded.
   name or an alias and shows clickable paths, with a matched alias below.
   Tree branches start collapsed; updates preserve manually opened branches.
 
+- `contents-pin:: true` (page property)
+
+  Put this page first among Contents roots, only if it has the `Contents` tag.
+  Pinned and other roots each use alphabetical order. Set `false` or remove
+  the property to restore alphabetical ordering. Child order is unchanged.
+  One horizontal divider separates pinned roots from the rest; pages appear once.
+  This uses the existing page query and adds no per-page reads or pin buttons.
+
 - `auto-favorites:: true`
 
   Render Favorites inside this block, in the order saved in the graph
