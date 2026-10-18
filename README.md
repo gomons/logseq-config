@@ -1,39 +1,17 @@
 # Logseq customizations
 
-Custom CSS and JavaScript for Markdown file graphs.
+Navigation, search, checklists, and property controls for Markdown file graphs.
+Developed for Logseq 0.10.15 on desktop and mobile. Uses internal DOM and APIs,
+so Logseq updates may require adjustments. Database graphs are not supported.
 
-Developed for Logseq 0.10.15. Uses Logseq's internal DOM and API; updates may
-require adjustments. Database graphs are not supported.
+## Install
 
-## Features
-
-- Star beside Contents in the toolbar adds or removes the page from Favorites.
-- Contents icon in the top toolbar, on desktop and mobile; hidden on Contents.
-- Short page titles with clickable parent paths in the toolbar.
-- On mobile, the nearest parent is visible; earlier levels open in a popup.
-- Search for Subpages, Tagged pages, and Linked References, arranged below page
-  content.
-- Create child pages with `+` beside Subpages: enter a leaf name and press
-  Enter or Create. The current page supplies the namespace; existing pages open
-  without duplication. Available even when the parent has no children.
-- Contents, Subpages, and Tagged pages match page aliases without displaying
-  alias captions in search results.
-- Saved collapse state for these sections, with search hidden while collapsed.
-- Hide Unlinked References and disable page previews on hover.
-- Collapsible Contents trees, tag clouds, and Favorites lists via block
-  properties.
-- Block search and checklist filters: All, Unchecked, and Checked.
-- `CHECK` / `CHECKED` rendered as interactive checkboxes with a distinct color.
-- Boolean properties displayed as checkboxes, including in reading mode.
-- Tag properties displayed as pills with add and remove buttons.
-- Aliases displayed as text with add and remove buttons.
-- Reading mode prevents text editing while preserving navigation, folding, and
-  checkboxes.
-- Shared catalog styling and search across visible fields.
-
-## Global settings
-
-Add these entries inside the existing map in your graph's `logseq/config.edn`:
+1. Copy [custom.js](logseq/custom.js) and [custom.css](logseq/custom.css) into
+   your graph's `logseq/` directory.
+2. Merge the settings below into your existing `logseq/config.edn` map.
+   The repository's [config.edn](logseq/config.edn) also contains personal
+   preferences; copy only the settings you want.
+3. Enable custom JavaScript in Logseq and reload with `Cmd+R` / `Ctrl+R`.
 
 ```clojure
 :notes/contents-shortcut? true
@@ -41,129 +19,113 @@ Add these entries inside the existing map in your graph's `logseq/config.edn`:
 :ui/enable-tooltip? false
 ```
 
-Set `contents-shortcut?` to `false` to hide the Contents icon. Set
-`hide-unlinked-references?` to `false` to show Unlinked References. These custom
-options default to `true`.
+The two `:notes/` options default to `true`. Set either to `false` to disable
+that behavior. Logseq's built-in `:ui/enable-tooltip?` controls hover previews.
 
-The Contents shortcut can also be configured per device:
+Optional device overrides take priority over the shared Contents setting:
 
 ```clojure
 :notes/desktop {:contents-shortcut? false}
 :notes/mobile {:contents-shortcut? true}
 ```
 
-Device values override the shared settings. Omitted keys use the shared value.
-Phones and tablets use `:notes/mobile`; desktop uses `:notes/desktop`.
-Window width does not affect this. Both sections live in the same synced file.
+Phones and tablets use the mobile setting, independently of window width.
+Reload after changing configuration.
 
-Logseq's built-in `:ui/enable-tooltip?` controls hover previews; set it to
-`true` to restore them. Each option works independently. Reload after changes.
+## Navigation
+
+- Toolbar shortcuts open Contents and toggle the current page in native
+  Favorites. The Contents shortcut is hidden on Contents itself.
+- Page headings show the leaf name; clickable parent paths appear in the
+  toolbar. On narrow screens, earlier parents move into a popup.
+- Subpages, Tagged pages, and Linked References appear after page content,
+  with search fields and locally saved fold states.
+- `+` beside Subpages creates a child page: enter only its name, then press
+  Enter or Create. The parent path is automatic; existing pages open without
+  duplication. The button is available even when there are no children.
+- Toolbar icons, spacing, property panels, and catalog cards use shared styles
+  that follow the graph's theme.
 
 ## Properties
 
-Page properties belong at the top of the Markdown file, before the first block.
-Other properties can be placed on individual blocks.
+Place page properties at the start of the Markdown file, before any blocks.
+Block properties apply where they are written. Boolean values appear as
+checkboxes; set a custom option to `false` or remove it to disable it.
 
-Automatic sections render in the block holding their property. Favorites, Pages,
-and Tags can each be folded by clicking their heading. Updates preserve the fold
-state; reloading resets these sections to expanded.
+| Property | Where | Effect when `true` |
+| --- | --- | --- |
+| `read-only` | Page or block | Prevent text editing on the page or block and all descendants. A child `false` cannot override an ancestor lock. |
+| `searchable` | Page or block | Add text search across the page or child blocks. |
+| `checklist` | Page or block | Add All / Unchecked / Checked filters for `CHECK` items. Combines with search. |
+| `auto-contents` | Page or block | Render the Pages tree and its search. |
+| `auto-favorites` | Page or block | Render native Favorites in their saved order. |
+| `auto-tags` | Page or block | Render a tag cloud, sized by the number of referencing blocks. |
+| `contents-pin` | Page | Move the page and its children to the top of Pages, without duplication. |
+| `contents-exclude` | Page | Hide the page from Pages and its search. Children remain under the nearest visible ancestor. Favorites are unaffected. |
 
-- `read-only:: true`
+Reading mode preserves navigation, folding, text selection, checkboxes, and
+property controls.
 
-  In page properties, lock the whole page. On a block, lock that block and all
-  descendants. A `false` value cannot override a locked page or ancestor.
-  Navigation, folding, checkboxes, and property switches remain available.
+Built-in `tags`, `alias`, and `aliases` receive add/remove controls. Tags use
+pills; aliases use dashed rectangles. Press Enter or `✓` to confirm an entry.
+Plain tags gain `[[…]]`; plain aliases stay text. Explicit `#tag` and `[[Page]]`
+forms are preserved and clickable. Keep aliases containing commas inside
+`[[…]]` so Logseq treats each as one value. Clicking outside the controls keeps
+normal property editing available.
 
-- `tags:: [[Page]], [[Another page]]`
+## Contents
 
-  Show tags as pills in the property panel. Use `−` to remove a tag or `+` to
-  enter a page name, then press Enter or `✓`. Clicking outside these controls
-  keeps
-  Logseq's normal property editing behavior. Plain names gain `[[…]]`; existing
-  `#tag` and `[[Page]]` forms are preserved. Buttons also work in reading mode.
+To make a Contents page, add these page properties:
 
-- `alias:: Name, Another name`
+```text
+auto-favorites:: true
+auto-contents:: true
+auto-tags:: true
+contents-exclude:: true
+```
 
-  Show aliases with `−` to remove and `+` to add. Enter or `✓` confirms a new
-  alias. Plain names stay text; explicit `#tag` and `[[Page]]` forms are
-  preserved and clickable. The same controls support `aliases::` and work in
-  reading mode.
+Each section can also be rendered independently on another page or block.
+Sections start expanded; tree branches start collapsed. Refreshes preserve
+folds, while a reload resets the automatic sections and tree.
 
-- `searchable:: true`
+Pages lists file-backed pages by namespace. Journals, implicit pages without
+files, files under `logseq/`, `.backup/`, or `assets/`, and root `AGENTS.md` and
+`README.md` are excluded. No Contents tag is required. Missing namespace levels
+appear in the next visible page's path.
 
-  Search child blocks, or the entire page when set in page properties.
+Pinned pages show their full path with individually clickable segments. One
+horizontal line separates pins from the remaining roots; each group is
+alphabetical. Tagged pages is hidden on pages already displaying this tree.
 
-- `checklist:: true`
+The tag cloud counts explicit hashtags in block text, excluding properties.
 
-  Filter `CHECK` / `CHECKED` among child blocks, or across the page when set in
-  page properties. Works independently of search; combines with it when both are
-  enabled.
+## Search and checklists
 
-- `auto-contents:: true`
+- Pages search matches leaf names and aliases across eligible note files.
+  Results show full clickable paths without alias captions.
+- Subpages and Tagged pages search also matches aliases. Linked References
+  search filters the text of rendered reference groups.
+- Block search includes folded descendants, opens paths to matches, and
+  restores folds when cleared.
+- Catalog search matches visible fields and aliases of pages linked in those
+  fields, such as a book author's translated name.
 
-  Render file-backed graph pages inside this block, grouped by namespace.
-  No `Contents` tag is required. Search matches leaf names and aliases. Results
-  show clickable paths without alias captions. Clearing search restores
-  the Contents tree.
-  Entries without note files are omitted. Missing namespace levels appear in
-  the next real page's label, without creating extra navigation entries.
-  Journal entries, including files in `journals/`, are excluded from this tree
-  and its search.
-  Files under `logseq/`, `.backup/`, `assets/`, and root `AGENTS.md` or `README.md`
-  are excluded too.
-  Tree branches start collapsed; updates preserve manually opened branches.
+Start a block with `CHECK` or `CHECKED` to render an interactive checkbox.
+`CHECKING` is also treated as unchecked. These controls use distinct styling
+from native TODO tasks.
 
-- `contents-exclude:: true` (page property)
+`checklist-exclude` belongs to the custom Checklists query in the notes graph;
+this repository does not implement that exclusion query.
 
-  Hide this page from the Pages tree and its search. Its children remain
-  available under the nearest visible namespace ancestor. Set `false` or
-  remove the property to show the page again. Favorites are unaffected.
+## Custom catalogs
 
-- `contents-pin:: true` (page property)
+Catalog queries live in the graph. This repository supplies styling and search
+for views using `.notes-catalog`, `.notes-catalog-item`, and
+`.notes-catalog-field`. Hidden fields are excluded from search.
 
-  Move this page to the top of Pages, from any namespace depth. It keeps its
-  children and is not duplicated in its former branch. Set `false` or remove
-  the property to restore its namespace position. Each group is alphabetical.
-  One horizontal divider separates pinned pages from the rest; pages appear
-  once. Pinned labels show the full page path with `›` between namespace levels.
-  Each path segment is a separate link to that page.
-  This uses the existing page query and adds no per-page reads or pin buttons.
-
-- `auto-favorites:: true`
-
-  Render Favorites inside this block, in the order saved in the graph
-  configuration. Works on any page, independently of the Contents shortcut
-  setting.
-
-- `auto-tags:: true`
-
-  Render a tag cloud inside this block from explicit hashtags across the entire
-  graph, excluding properties. Size reflects the number of blocks referencing
-  each tag.
-
-## Catalog views
-
-Custom query views use `.notes-catalog`, `.notes-catalog-item`, and
-`.notes-catalog-field` to share styling and search. Only visible fields are
-searched, including aliases of pages linked in those fields. Field selection
-belongs to the query; catalog queries remain in the graph.
-
-Titles use `.notes-catalog-title` and `data-field="page-title"`.
-Aliases use `data-field="page-alias"`. Both must also use
-`.notes-catalog-field` to be searchable. Aliases appear below titles, followed
-by the configured attributes, such as author, director, release year, or series.
-The same view can be used for other catalogs.
-
-## Installation
-
-1. Copy [custom.js](logseq/custom.js) and [custom.css](logseq/custom.css) into
-   your graph's `logseq/` directory.
-2. Merge the desired settings from [config.edn](logseq/config.edn) into your
-   graph configuration.
-3. Enable custom JavaScript in Logseq and reload with `Cmd+R` / `Ctrl+R`.
-
-Add the properties above to enable optional features. Set boolean properties to
-`false` to disable them; their checkboxes update the stored values directly.
+Use `.notes-catalog-title` with `data-field="page-title"` for titles and
+`data-field="page-alias"` for aliases; both also need `.notes-catalog-field`.
+The query controls the fields and their visibility.
 
 ## License
 
