@@ -86,16 +86,23 @@ window.notesMatchingAlias = (link, terms) => {
       .every((term) => text.includes(term));
   };
 
-  // Click also covers touch taps; the native fold handler lives on the arrow.
+  // Native mobile Tagged pages has neither an arrow nor a title fold handler.
   document.addEventListener("click", (event) => {
-    if (event.button !== 0) return;
+    if (event.button != null && event.button !== 0) return;
     const title = event.target.closest?.(".references.page-tags .foldable-title");
     if (!title || title.matches(".cursor") || event.target.closest("a, button, input")) return;
     const control = title.querySelector("a.block-control");
-    if (!control) return;
+    const content = title.parentElement.nextElementSibling;
+    if (!control && !content) return;
     event.preventDefault();
     event.stopPropagation();
-    control.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    if (control) {
+      control.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    } else {
+      const collapsed = content.classList.toggle("hidden");
+      content.classList.toggle("initial", !collapsed);
+      title.setAttribute("aria-expanded", String(!collapsed));
+    }
   }, { signal });
 
   // Preserve DOM nodes when their displayed text has not changed.
@@ -424,7 +431,8 @@ window.notesMatchingAlias = (link, terms) => {
       const title = panel.querySelector(".foldable-title");
       const content = title?.parentElement.nextElementSibling;
       const control = title?.matches(".cursor") ? title : title?.querySelector("a.block-control");
-      if (!name || !content || !control) return;
+      const mobileTags = !control && panel.matches(".references.page-tags");
+      if (!name || !content || (!control && !mobileTags)) return;
       const kind = panel.matches(".page-hierarchy") ? "hierarchy"
         : panel.matches(".page-tags") ? "tags" : "linked";
       const key = JSON.stringify([graph, name.toLowerCase(), kind]);
@@ -432,8 +440,14 @@ window.notesMatchingAlias = (link, terms) => {
       watched.get(content)?.observer.disconnect();
       const collapsed = () => content.classList.contains("hidden");
       // Restore through Logseq's handler, so its internal state stays consistent.
-      if (typeof saved[key] === "boolean" && saved[key] !== collapsed())
-        control.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      if (typeof saved[key] === "boolean" && saved[key] !== collapsed()) {
+        if (control) control.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        else {
+          content.classList.toggle("hidden", saved[key]);
+          content.classList.toggle("initial", !saved[key]);
+        }
+      }
+      if (mobileTags) title.setAttribute("aria-expanded", String(!collapsed()));
       let previous = collapsed();
       const observer = new MutationObserver(() => {
         const currentGraph = window.logseq?.api?.get_state_from_store?.("git/current-repo");
