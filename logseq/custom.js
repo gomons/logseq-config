@@ -234,12 +234,18 @@ window.notesMatchingAlias = (link, terms) => {
         status.textContent = "Enter a name without / or brackets.";
         return;
       }
-      const name = panel.dataset.notesParent + "/" + leaf;
+      const parent = panel.dataset.notesParent;
       submit.disabled = true;
       status.textContent = "";
       try {
         const api = window.logseq?.api;
         if (!api?.create_page) throw new Error("Page creation is unavailable. Reload Logseq.");
+        // data-ref is Logseq's normalized lookup name, not its original spelling.
+        const page = await api.get_page(parent);
+        const original = page?.originalName || page?.["original-name"] || page?.["block/original-name"];
+        if (!original) throw new Error("Could not read the parent page name.");
+        if (signal.aborted || !panel.isConnected || panel.dataset.notesParent !== parent) return;
+        const name = original + "/" + leaf;
         const created = await api.create_page(name, {}, { redirect: false, createFirstBlock: true });
         if (!created) throw new Error("Could not create the page.");
         window.location.hash = "#/page/" + encodeURIComponent(name);
