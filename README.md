@@ -58,6 +58,7 @@ checkboxes; set a custom option to `false` or remove it to disable it.
 | `read-only` | Page or block | Prevent text editing on the page or block and all descendants. A child `false` cannot override an ancestor lock. |
 | `searchable` | Page or block | Add text search across the page or child blocks. |
 | `checklist` | Page or block | Add All / Unchecked / Checked filters for `CHECK` items. Combines with search. |
+| `table-editable` | Table block | Edit cells and add or delete rows in a simple Markdown table. Page and ancestor read-only locks apply. |
 | `auto-contents` | Page or block | Render the Pages tree and its search. |
 | `auto-favorites` | Page or block | Render native Favorites in their saved order. |
 | `auto-tags` | Page or block | Render a tag cloud, sized by the number of referencing blocks. |
@@ -117,6 +118,13 @@ from native TODO tasks.
 
 `checklist-exclude` belongs to the custom Checklists query in the notes graph;
 this repository does not implement that exclusion query.
+
+For an editable table, put `table-editable:: true` in its block properties.
+Focus a cell to edit; leaving it or pressing Enter saves. Escape cancels.
+Use Add row below the table and `−` beside a row to remove it. Changes are
+saved back to Markdown; conflicting edits require reviewing and retrying.
+The experimental editor supports one rectangular table per block and shows
+cell contents as plain text, including any Markdown markup.
 
 ## Custom catalogs
 

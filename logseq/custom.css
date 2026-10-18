@@ -867,3 +867,43 @@ div.flex-1.page.relative > :is(
 [data-notes-synthetic] { margin-top: 2rem; }
 [data-notes-synthetic] ul:empty,
 [data-notes-synthetic] .notes-page-list-filter { display: none; }
+
+/* Optional Markdown table editor. */
+.notes-table-source { display: none !important; }
+.notes-table-editor { overflow-x: auto; margin: 0.5rem 0; }
+.notes-table-editor table { width: 100%; }
+.notes-table-editor th, .notes-table-editor td { vertical-align: top; }
+.notes-table-editor button {
+  padding: 0.3rem 0.5rem;
+  min-height: 32px;
+  color: var(--ls-link-text-color);
+  border-radius: 4px;
+}
+.notes-table-editor button:hover { background: var(--ls-secondary-background-color); }
+.notes-table-editor .notes-table-cell {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+.notes-table-editor input {
+  width: 100%;
+  min-width: 6rem;
+  padding: 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ls-primary-text-color);
+  font: inherit;
+}
+.notes-table-editor input:focus {
+  border-color: var(--ls-link-text-color);
+  background: var(--ls-primary-background-color);
+  outline: none;
+}
+.notes-table-editor [role="status"] {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ls-secondary-text-color);
+}
