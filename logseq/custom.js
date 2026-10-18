@@ -1045,9 +1045,9 @@ window.notesSubtreeSearch = new AbortController();
           /^\s*[\w-]+::.*$/gm,
           "",
         );
-        const marker = content.trimStart().match(/^(CHECKED|CHECKING|CHECK)(?=\s|$)/)?.[1];
+        const marker = content.trimStart().match(/^(CHECKED|CHECK)(?=\s|$)/)?.[1];
         const statusMatch = filter === "all" ||
-          (filter === "checked" ? marker === "CHECKED" : marker === "CHECK" || marker === "CHECKING");
+          (filter === "checked" ? marker === "CHECKED" : marker === "CHECK");
         const match = statusMatch && terms.every((term) => normalize(content).includes(term));
         if (match) {
           count++;
@@ -1735,9 +1735,9 @@ window.notesSubtreeSearch = new AbortController();
   const controller = new AbortController();
   window.notesCheckTasks = controller;
   const { signal } = controller;
-  const prefix = /^(CHECKING|CHECKED|CHECK)(?=\s|$)/;
-  const storedPrefix = /^((?:[ \t]*[\w-]+::[^\n]*\n)*[ \t]*)(CHECKING|CHECKED|CHECK)(?=\s|$)/;
-  const nativeClass = { CHECK: "todo", CHECKING: "todo", CHECKED: "done" };
+  const prefix = /^(CHECKED|CHECK)(?=\s|$)/;
+  const storedPrefix = /^((?:[ \t]*[\w-]+::[^\n]*\n)*[ \t]*)(CHECKED|CHECK)(?=\s|$)/;
+  const nativeClass = { CHECK: "todo", CHECKED: "done" };
   const controls = new Map();
   const pending = new Set();
   const saving = new Set();

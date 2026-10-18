@@ -1,0 +1,97 @@
+const fs = require("fs"),
+  vm = require("vm"),
+  assert = require("assert");
+const { parseHTML } = require("linkedom");
+const { window, document } = parseHTML(
+  '<html><body><div class="ls-block" blockid="b"><table><tr><td>Original</td></tr></table></div></body></html>',
+);
+let content =
+    "table-editable:: true\n| Polish | Russian |\n| --- | --- |\n| kot | кот |",
+  lock = false,
+  ancestor = false,
+  writes = [];
+const block = () => ({ uuid: "b", content, page: { id: 1 } });
+let poll;
+window.logseq = {
+  api: {
+    get_state_from_store: () => "graph",
+    get_block: async () => block(),
+    get_page: async () => ({ name: "page", properties: { "read-only": lock } }),
+    get_page_blocks_tree: async () => [
+      {
+        uuid: "parent",
+        content: "read-only:: " + ancestor,
+        children: [block()],
+      },
+    ],
+    update_block: async (uuid, value) => {
+      content = value;
+      writes.push(value);
+    },
+  },
+};
+vm.runInNewContext(
+  fs
+    .readFileSync("logseq/custom.js", "utf8")
+    .split("/* Opt-in editing for simple Markdown tables;")[1]
+    .replace(/^.*?\*\//s, ""),
+  {
+    window,
+    document,
+    AbortController,
+    setInterval: (cb) => ((poll = cb), 1),
+    clearInterval() {},
+    console,
+  },
+);
+const tick = () => new Promise((r) => setTimeout(r, 0));
+const inputs = () => [...document.querySelectorAll("tbody input")];
+const blur = (node) => node.dispatchEvent(new window.Event("blur"));
+(async () => {
+  await tick();
+  assert(document.querySelector(".notes-table-editor"));
+  let [a, b] = inputs();
+  a.value = "kot | pies";
+  blur(a);
+  b.value = "кот и пёс";
+  blur(b);
+  await tick();
+  await tick();
+  assert(content.includes("kot \\| pies"));
+  assert(content.includes("кот и пёс"));
+  assert.equal(writes.length, 2);
+  assert.equal(inputs()[0], a);
+  assert.equal(inputs()[1], b);
+  assert(!b.disabled);
+  assert(!document.querySelector('[aria-label="Save cell"]'));
+  document.querySelector('[aria-label="Add row"]').click();
+  await tick();
+  assert.equal(document.querySelectorAll("tbody tr").length, 2);
+  document.querySelector('[aria-label="Delete row"]').click();
+  await tick();
+  assert.equal(document.querySelectorAll("tbody tr").length, 1);
+  for (const mode of ["page", "ancestor"]) {
+    lock = mode === "page";
+    ancestor = mode === "ancestor";
+    let input = inputs()[0];
+    input.value = "forbidden";
+    let n = writes.length;
+    blur(input);
+    await tick();
+    assert.equal(writes.length, n);
+    assert(
+      document
+        .querySelector('[role="status"]')
+        .textContent.includes("read-only"),
+    );
+  }
+  window.notesTableEditor.abort();
+  assert(!document.querySelector(".notes-table-editor"));
+  assert(!document.querySelector(".notes-table-source"));
+  console.log(
+    "Table editor: blur saves, rapid cell switches queue both changes, inputs retain identity, escaping, row actions and inherited locks passed.",
+  );
+})().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});

@@ -113,8 +113,7 @@ The tag cloud counts explicit hashtags in block text, excluding properties.
   fields, such as a book author's translated name.
 
 Start a block with `CHECK` or `CHECKED` to render an interactive checkbox.
-`CHECKING` is also treated as unchecked. These controls use distinct styling
-from native TODO tasks.
+These controls use distinct styling from native TODO tasks.
 
 `checklist-exclude` belongs to the custom Checklists query in the notes graph;
 this repository does not implement that exclusion query.
@@ -135,6 +134,18 @@ for views using `.notes-catalog`, `.notes-catalog-item`, and
 Use `.notes-catalog-title` with `data-field="page-title"` for titles and
 `data-field="page-alias"` for aliases; both also need `.notes-catalog-field`.
 The query controls the fields and their visibility.
+
+## Tests
+
+Requires Node.js 22 or newer. Install the test tools once with `npm ci`, then
+run `npm test` whenever needed. Nothing runs automatically or inside Logseq.
+To run one area: `node --test tests/tables.test.cjs`.
+
+The `tests/` directory covers navigation, aliases and search, Contents,
+read-only inheritance, CHECK/CHECKED, subpage persistence, and table editing.
+Tests run the real script against a simulated DOM and Logseq API; they never
+read or modify your notes. CSS tests check parsing and important interaction
+rules. They do not replace a visual check in Logseq on desktop and mobile.
 
 ## License
 

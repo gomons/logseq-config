@@ -1,0 +1,16 @@
+{
+  "name": "logseq-config",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "format:tests": "prettier --write \"tests/*.cjs\""
+  },
+  "devDependencies": {
+    "linkedom": "0.18.13",
+    "postcss": "8.5.30",
+    "prettier": "3.9.10"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
