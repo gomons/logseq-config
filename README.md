@@ -42,7 +42,8 @@ Reload after changing configuration.
   with search fields and locally saved fold states.
 - `+` beside Subpages creates a child page: enter only its name, then press
   Enter or Create. The parent path is automatic; existing pages open without
-  duplication. The button is available even when there are no children.
+  duplication. New pages start with `read-only:: false` so Logseq saves a file
+  immediately. The button is available even when there are no children.
 - Toolbar icons, spacing, property panels, and catalog cards use shared styles
   that follow the graph's theme.
 

@@ -246,8 +246,18 @@ window.notesMatchingAlias = (link, terms) => {
         if (!original) throw new Error("Could not read the parent page name.");
         if (signal.aborted || !panel.isConnected || panel.dataset.notesParent !== parent) return;
         const name = original + "/" + leaf;
-        const created = await api.create_page(name, {}, { redirect: false, createFirstBlock: true });
+        // Logseq does not persist a new page containing only one blank block.
+        const created = await api.create_page(name, { "read-only": false },
+          { redirect: false, createFirstBlock: true });
         if (!created) throw new Error("Could not create the page.");
+        // create_page returns existing implicit pages without initializing them.
+        const blocks = await api.get_page_blocks_tree(name) || [];
+        if (!blocks.length) {
+          await api.insert_block(name, "read-only:: false", { isPageBlock: true });
+        } else if (blocks.length === 1 && !blocks[0].content?.trim()
+          && !blocks[0].children?.length) {
+          await api.update_block(blocks[0].uuid, "read-only:: false");
+        }
         window.location.hash = "#/page/" + encodeURIComponent(name);
         input.value = "";
         form.hidden = true;
