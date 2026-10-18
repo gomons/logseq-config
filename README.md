@@ -13,6 +13,9 @@ require adjustments. Database graphs are not supported.
 - On mobile, the nearest parent is visible; earlier levels open in a popup.
 - Search for Subpages, Tagged pages, and Linked References, arranged below page
   content.
+- Create child pages with `+` beside Subpages: enter a leaf name and press
+  Enter or Create. The current page supplies the namespace; existing pages open
+  without duplication. Available even when the parent has no children.
 - Contents, Subpages, and Tagged pages match page aliases without displaying
   alias captions in search results.
 - Saved collapse state for these sections, with search hidden while collapsed.

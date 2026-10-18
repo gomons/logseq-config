@@ -187,6 +187,71 @@ window.notesMatchingAlias = (link, terms) => {
     row.classList.add("notes-navigation-row");
   };
 
+  const addSubpageCreator = (panel, parent) => {
+    panel.dataset.notesParent = parent;
+    if (panel.querySelector(".notes-subpage-create")) return;
+    const heading = panel.querySelector(".foldable-title");
+    if (!heading) return;
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "notes-subpage-create";
+    toggle.textContent = "+";
+    toggle.title = "Create subpage";
+    toggle.setAttribute("aria-label", "Create subpage");
+    toggle.setAttribute("aria-expanded", "false");
+    const form = document.createElement("form");
+    form.className = "notes-subpage-form";
+    form.hidden = true;
+    const input = document.createElement("input");
+    input.placeholder = "Page name";
+    input.setAttribute("aria-label", "New subpage name");
+    input.setAttribute("enterkeyhint", "done");
+    input.required = true;
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.textContent = "Create";
+    const status = document.createElement("span");
+    status.setAttribute("role", "status");
+    form.append(input, submit, status);
+    heading.append(toggle);
+    heading.parentElement.append(form);
+    for (const type of ["pointerdown", "mousedown", "click", "keydown", "keyup"])
+      form.addEventListener(type, (event) => event.stopPropagation(), { signal });
+    toggle.addEventListener("mousedown", (event) => event.stopPropagation(), { signal });
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      form.hidden = !form.hidden;
+      toggle.setAttribute("aria-expanded", String(!form.hidden));
+      if (!form.hidden) input.focus();
+    }, { signal });
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (submit.disabled) return;
+      const leaf = input.value.trim();
+      if (!leaf || /[\/\[\]\n\r]/.test(leaf)) {
+        status.textContent = "Enter a name without / or brackets.";
+        return;
+      }
+      const name = panel.dataset.notesParent + "/" + leaf;
+      submit.disabled = true;
+      status.textContent = "";
+      try {
+        const api = window.logseq?.api;
+        if (!api?.create_page) throw new Error("Page creation is unavailable. Reload Logseq.");
+        const created = await api.create_page(name, {}, { redirect: false, createFirstBlock: true });
+        if (!created) throw new Error("Could not create the page.");
+        window.location.hash = "#/page/" + encodeURIComponent(name);
+        input.value = "";
+        form.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+      } catch (error) {
+        status.textContent = error.message || "Could not create the page.";
+      } finally { submit.disabled = false; }
+    }, { signal });
+  };
+
   const updatePanel = (panel) => {
     if (panel.matches(".references.page-linked")) {
       addSearch(panel, "Linked References");
@@ -203,6 +268,7 @@ window.notesMatchingAlias = (link, terms) => {
     const name = hierarchy ? "Subpages" : "Tagged pages";
     list.classList.add("notes-navigation-list");
     addSearch(panel, name);
+    if (hierarchy) addSubpageCreator(panel, current);
     let count = 0;
     for (const row of list.children) {
       if (!row.matches("li")) continue;
@@ -218,7 +284,7 @@ window.notesMatchingAlias = (link, terms) => {
     }
     const heading = panel.querySelector(".foldable-title h2");
     setText(heading, `${count} ${name}`);
-    panel.classList.toggle("notes-navigation-empty", hierarchy && count === 0);
+    panel.classList.toggle("notes-navigation-empty", false);
     filterRows(panel);
   };
 
@@ -232,6 +298,28 @@ window.notesMatchingAlias = (link, terms) => {
     // Our own links and headings must not trigger another refresh.
     observer.disconnect();
     try {
+      for (const page of document.querySelectorAll(".page")) {
+        if (!page.querySelector(titleSelector)) continue;
+        const panels = [...page.querySelectorAll(".page-hierarchy")];
+        if (panels.some((panel) => !panel.hasAttribute("data-notes-synthetic"))) {
+          panels.filter((panel) => panel.hasAttribute("data-notes-synthetic"))
+            .forEach((panel) => panel.remove());
+        } else if (!panels.length) {
+          const panel = document.createElement("div");
+          panel.className = "page-hierarchy";
+          panel.setAttribute("data-notes-synthetic", "true");
+          const header = document.createElement("div");
+          const heading = document.createElement("div");
+          heading.className = "foldable-title";
+          heading.append(document.createElement("h2"));
+          header.append(heading);
+          const list = document.createElement("ul");
+          list.className = "namespaces";
+          panel.append(header, list);
+          page.append(panel);
+          pendingPanels.add(panel);
+        }
+      }
       for (const panel of pendingPanels) {
         if (panel.isConnected) updatePanel(panel);
       }
@@ -264,6 +352,8 @@ window.notesMatchingAlias = (link, terms) => {
     pendingPanels.clear();
     searchFields.forEach((input) => input.remove());
     searchFields.clear();
+    document.querySelectorAll(".notes-subpage-create, .notes-subpage-form, [data-notes-synthetic]")
+      .forEach((element) => element.remove());
   }, { once: true });
   window.addEventListener("notes-aliases-changed", () => {
     document.querySelectorAll(panelSelector).forEach((panel) => pendingPanels.add(panel));
