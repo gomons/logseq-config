@@ -84,6 +84,28 @@ const update = async () => {
   await update();
   assert(document.querySelector(".page").classList.contains("notes-read-only"));
   assert(fire(block("sibling"), "beforeinput"));
+  const query = document.createElement("div");
+  query.className = "custom-query";
+  query.innerHTML =
+    '<div class="breadcrumb block-parents"><a><span>Hoba</span></a></div><div class="block-content">Result text</div>';
+  document.querySelector(".page").append(query);
+  let navigations = 0;
+  query.querySelector("a").addEventListener("mouseup", () => navigations++);
+  // Use a document listener like Logseq's delegated React handler: it must
+  // receive the event after the reading-mode guard, including from child spans.
+  let delegated = 0;
+  const onMouseUp = () => delegated++;
+  document.addEventListener("mouseup", onMouseUp);
+  assert(!fire(query.querySelector("a span"), "mousedown"));
+  assert(!fire(query.querySelector("a span"), "mouseup"));
+  assert.equal(navigations, 1);
+  assert.equal(delegated, 1);
+  assert(!fire(query.querySelector("a span"), "click"));
+  assert(fire(query.querySelector("a span"), "beforeinput"));
+  assert(fire(query.querySelector("a span"), "paste"));
+  assert(fire(query.querySelector("a span"), "dragstart"));
+  assert(fire(query.querySelector(".block-content"), "click"));
+  document.removeEventListener("mouseup", onMouseUp);
   pageProps = {};
   childValue = true;
   await update();

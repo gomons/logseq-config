@@ -845,6 +845,8 @@ window.notesMatchingAlias = (link, terms) => {
     target.closest(
       [
         ".notes-property-toggle", ".notes-tag-action", ".notes-tag-input", ".notes-page-favorite", ".breadcrumb .page-reference", ".sidebar-item-header",
+        // Query parent links navigate on mouseup and intentionally have no href.
+        ".breadcrumb.block-parents a",
         ".block-control", ".bullet-link-wrap", ".block-children-left-border",
         ".open-block-ref-link", ".block-ref-wrap", ".page-blocks-collapse-control",
         ".foldable-title", ".notes-page-list-filter", ".notes-subtree-search",
