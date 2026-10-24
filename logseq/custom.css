@@ -871,7 +871,8 @@ div.flex-1.page.relative > :is(
 /* Optional Markdown table editor. */
 .notes-table-source { display: none !important; }
 .notes-table-editor { overflow-x: auto; margin: 0.5rem 0; }
-.notes-table-editor table { width: 100%; }
+.notes-table-editor table { width: 100%; table-layout: fixed; }
+.notes-table-editor th:last-child, .notes-table-editor td:last-child { width: 3rem; }
 .notes-table-editor th, .notes-table-editor td { vertical-align: top; }
 .notes-table-editor button {
   padding: 0.3rem 0.5rem;
@@ -887,9 +888,13 @@ div.flex-1.page.relative > :is(
   color: inherit;
   overflow-wrap: anywhere;
 }
-.notes-table-editor input {
+.notes-table-editor textarea {
   width: 100%;
-  min-width: 6rem;
+  min-width: 0;
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
   padding: 0.3rem;
   border: 1px solid transparent;
   border-radius: 4px;
@@ -897,7 +902,7 @@ div.flex-1.page.relative > :is(
   color: var(--ls-primary-text-color);
   font: inherit;
 }
-.notes-table-editor input:focus {
+.notes-table-editor textarea:focus {
   border-color: var(--ls-link-text-color);
   background: var(--ls-primary-background-color);
   outline: none;
