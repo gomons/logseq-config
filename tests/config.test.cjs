@@ -1,7 +1,7 @@
 const { readFileSync } = require("node:fs");
 const { Script, runInNewContext } = require("node:vm");
 const assert = require("node:assert/strict");
-const source = readFileSync("logseq/custom.js", "utf8");
+const source = readFileSync("src/js/config.js", "utf8");
 new Script(source); // Parse every feature, including ones absent from DOM fixtures.
 const values = new Map();
 let graph = "graph";
@@ -15,7 +15,7 @@ const window = {
     },
   },
 };
-runInNewContext(source.split("/* Alias lookups")[0], { window });
+runInNewContext(source, { window });
 const enabled = window.notesFeatureEnabled;
 assert.equal(enabled("notes/contents-shortcut?"), true);
 values.set("config|@graph|notes/contents-shortcut?", false);

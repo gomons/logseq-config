@@ -32,10 +32,8 @@ window.logseq = {
     },
   },
 };
-const source = readFileSync("logseq/custom.js", "utf8")
-  .split("/* Render CHECK tasks")[1]
-  .split("/* Boolean property")[0];
-runInNewContext("/* Render CHECK tasks" + source, {
+const source = readFileSync("src/js/checklists.js", "utf8");
+runInNewContext(source, {
   window,
   document,
   AbortController,

@@ -1,0 +1,183 @@
+/* Native toolbar actions share Home's color and spacing. */
+#head > .r,
+#head > .r > .flex,
+#head .notes-toolbar-actions {
+  align-items: center;
+  gap: 4px;
+}
+#head > .r {
+  padding-right: 8px;
+  font-size: 0;
+  line-height: 1;
+}
+#head > .r > div {
+  display: flex;
+  align-items: center;
+}
+#head > :is(.l, .r) .ui__dropdown-trigger {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+}
+#head .ui__dropdown-trigger > .dropdown-wrapper {
+  top: 100%;
+}
+#head > .r .button.icon {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+#head > .r .button.icon > :is(svg, i) {
+  display: block;
+  line-height: 1;
+}
+#head .button.icon > .ui__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  line-height: 0;
+}
+#head .button.icon > .ui__icon > svg {
+  display: block;
+  flex-shrink: 0;
+}
+#head .notes-toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+#head .notes-toolbar-actions > .button {
+  display: inline-flex;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 4px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--lx-gray-11, var(--ls-header-button-background, var(--rx-gray-11)));
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-app-region: no-drag;
+  -webkit-tap-highlight-color: transparent;
+}
+#head .notes-toolbar-actions > .button:hover {
+  color: var(--lx-gray-12, var(--ls-header-button-background, var(--rx-gray-12)));
+}
+#head .notes-toolbar-actions > .button[hidden] {
+  display: none !important;
+}
+#head .notes-toolbar-actions svg {
+  /* The list drawing spans 17.8 of its 24 viewBox units. */
+  width: 22.5px;
+  height: 22.5px;
+  display: block;
+  flex-shrink: 0;
+}
+#head .notes-toolbar-actions .notes-page-favorite svg {
+  /* Match Home's visible height, including the star's stroke. */
+  width: 18.9px;
+  height: 18.9px;
+  transform: translateY(0.3px);
+  stroke-width: 2;
+  fill: none;
+}
+/* Cover SVG icons and Logseq's icon-font fallback. */
+#head .ls-icon-home > svg {
+  width: 20px;
+  height: 20px;
+}
+#head .ls-icon-layout-sidebar-right > svg {
+  width: 22.25px;
+  height: 22.25px;
+}
+#head #left-menu svg,
+#head .ls-icon-chevron-left > svg {
+  width: 24px;
+  height: 24px;
+}
+#head #left-menu .ti-menu-2 {
+  font-size: 20px !important;
+}
+#head .toggle-right-sidebar .ti-layout-sidebar-right {
+  font-size: 21.52px !important;
+}
+/* One mobile spacing system for native and custom header controls. */
+@media (max-width: 640px) {
+  #head {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 8px;
+    box-sizing: border-box;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  #head > .l,
+  #head > .r {
+    min-width: 0;
+    flex: 0 0 auto;
+    gap: 4px;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  #head > .l {
+    font-size: 0;
+    line-height: 1;
+    align-self: stretch;
+    height: auto;
+    align-items: center;
+  }
+  #head > .l > div {
+    display: flex;
+    align-items: center;
+  }
+  #head > .r {
+    justify-self: stretch;
+    justify-content: flex-end;
+  }
+  #head > .l .flex,
+  #head > .r > .flex,
+  #head .notes-toolbar-actions {
+    gap: 4px;
+    align-items: center;
+  }
+  #head :is(.l, .r) .button.icon {
+    display: inline-flex;
+    box-sizing: border-box;
+    flex: 0 0 32px;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+    margin: 0;
+    font-size: 20px;
+    line-height: 1;
+  }
+}
+#head .notes-toolbar-actions .notes-page-favorite[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+.notes-page-favorite:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+.notes-page-favorite:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 2px;
+}
+

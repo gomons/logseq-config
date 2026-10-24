@@ -1,16 +1,5 @@
 {:meta/version 1
 
- ;; Contents shortcut. Set to false to hide it.
- :notes/contents-shortcut? true
-
- ;; Device overrides for the Contents shortcut.
- ;; Omit a key to use its shared setting above.
- :notes/desktop {:contents-shortcut? true}
- :notes/mobile {:contents-shortcut? true}
-
- ;; Hide Unlinked References. Set to false to show the native section.
- :notes/hide-unlinked-references? true
-
  ;; Set the preferred format.
  ;; Available options:
  ;; - Markdown (default)
@@ -49,7 +38,7 @@
 
  ;; Enable tooltip preview on hover.
  ;; Default value: true
- :ui/enable-tooltip? false
+ :ui/enable-tooltip? true
 
  ;; Display brackets [[]] around page references.
  ;; Default value: true

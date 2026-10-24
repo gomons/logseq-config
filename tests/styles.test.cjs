@@ -1,7 +1,7 @@
 const { readFileSync } = require("node:fs");
 const assert = require("node:assert/strict");
 const postcss = require("postcss");
-const css = readFileSync("logseq/custom.css", "utf8");
+const css = readFileSync("dist/logseq/custom.css", "utf8");
 const root = postcss.parse(css);
 const rules = [];
 root.walkRules((rule) => rules.push(rule));
@@ -27,5 +27,11 @@ assert(
 assert(declarations('.notes-checklist-filters button[aria-pressed="true"]'));
 // CSS parsing cannot verify layout: still review Logseq on desktop and mobile.
 
-assert.equal(declarations(".notes-table-editor textarea")["white-space"], "pre-wrap");
-assert.equal(declarations(".notes-table-editor table")["table-layout"], "fixed");
+assert.equal(
+  declarations(".notes-table-editor textarea")["white-space"],
+  "pre-wrap",
+);
+assert.equal(
+  declarations(".notes-table-editor table")["table-layout"],
+  "fixed",
+);

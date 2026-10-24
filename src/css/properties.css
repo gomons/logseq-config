@@ -1,0 +1,36 @@
+/* Boolean values stay in the file; the checkbox represents them in the UI. */
+.block-properties div:has(> .page-property-value > .notes-property-toggle) {
+  display: flex;
+  align-items: center;
+  column-gap: 0.25rem;
+}
+.page-property-value:has(> .notes-property-toggle) {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0;
+  line-height: 1;
+}
+.page-property-value:has(> .notes-property-toggle) > :not(.notes-property-toggle) {
+  display: none;
+}
+.notes-property-toggle {
+  display: inline-block;
+  vertical-align: middle;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 1rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.notes-property-toggle:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 2px;
+}
+.notes-property-toggle:disabled {
+  opacity: 1;
+  cursor: wait;
+}
+

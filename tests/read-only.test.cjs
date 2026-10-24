@@ -33,23 +33,17 @@ class Observer {
   observe() {}
   disconnect() {}
 }
-const src = fs
-  .readFileSync("logseq/custom.js", "utf8")
-  .split("/* Reading mode inherits page and ancestor block locks.")[1]
-  .split("/* Independent subtree text search")[0];
-vm.runInNewContext(
-  "/* Reading mode inherits page and ancestor block locks." + src,
-  {
-    window,
-    document,
-    Element: window.Element,
-    AbortController,
-    MutationObserver: Observer,
-    setTimeout: (fn) => ((refresh = fn), 1),
-    clearTimeout() {},
-    console,
-  },
-);
+const src = fs.readFileSync("src/js/read-only.js", "utf8");
+vm.runInNewContext(src, {
+  window,
+  document,
+  Element: window.Element,
+  AbortController,
+  MutationObserver: Observer,
+  setTimeout: (fn) => ((refresh = fn), 1),
+  clearTimeout() {},
+  console,
+});
 const tick = () => new Promise(setImmediate);
 const block = (id) => document.querySelector(`[blockid=${id}]`);
 const fire = (node, type) => {

@@ -1,0 +1,63 @@
+/* Hide Unlinked References when enabled in config.edn. */
+.notes-hide-unlinked-references .references.page-unlinked {
+  display: none !important;
+}
+
+/* Keep navigation after page content: Subpages, Tagged pages, Linked References. */
+div.flex-1.page.relative {
+  display: flex;
+  flex-direction: column;
+}
+div.flex-1.page.relative > .page-hierarchy {
+  order: 1;
+}
+div.flex-1.page.relative > .references.page-tags {
+  order: 2;
+}
+div.flex-1.page.relative > :is(
+  .references.page-linked,
+  :has(.references.page-linked)
+) {
+  order: 3;
+}
+
+/* Keep full destinations behind short page names. */
+.notes-navigation-row > :not(.notes-navigation-link),
+.notes-navigation-excluded,
+.notes-navigation-empty,
+.notes-page-filter-hidden {
+  display: none !important;
+}
+
+/* Match Linked References; keep Logseq's native heading size and spacing. */
+:is(.page-hierarchy, .references.page-tags) .foldable-title h2 {
+  font-weight: 500;
+  opacity: 1;
+}
+.references.page-tags .foldable-title:has(a.block-control) {
+  cursor: pointer;
+}
+
+/* One search field below the heading, followed by a separate results card. */
+.notes-page-list-filter {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 6px;
+  background: var(--ls-primary-background-color);
+  color: var(--ls-primary-text-color);
+}
+/* Follow the native result panel's fold state without clearing the query. */
+:is(.page-hierarchy, .references.page-tags, .references.page-linked)
+  :has(> .foldable-title):has(+ .hidden) > .notes-page-list-filter {
+  display: none;
+}
+.notes-navigation-list {
+  margin: 0.75rem 0 0 !important;
+  padding: 1rem 1rem 1rem 2rem;
+  border-radius: 6px;
+  background: var(--ls-secondary-background-color);
+}
