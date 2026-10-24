@@ -36,23 +36,6 @@
     return [...parsed.lines.slice(0, parsed.indices[0]), ...rows,
       ...parsed.lines.slice(parsed.indices.at(-1) + 1)].join("\n");
   };
-  const locked = async (api, block) => {
-    const page = await api.get_page(block.page?.id || block.page);
-    if (!page) return true;
-    const tree = await api.get_page_blocks_tree(page.name || page.originalName);
-    if (!tree) return true;
-    const pageLock = truth(property(page, "read-only")) || tree.some((item) =>
-      (item.preBlock || item["pre-block?"]) && truth(property(item, "read-only")));
-    let result = true;
-    const visit = (items, inherited) => {
-      for (const item of items) {
-        const value = inherited || truth(property(item, "read-only"));
-        if (String(item.uuid) === String(block.uuid)) result = value;
-        visit(item.children || [], value);
-      }
-    };
-    visit(tree, pageLock); return result;
-  };
   const remove = (table, state) => {
     state.editor.remove(); table.classList.remove("notes-table-source"); states.delete(table);
   };
@@ -78,7 +61,6 @@
         if (!sameGraph()) throw Error("Graph changed. Reopen the page.");
         const latest = await api.get_block(state.uuid);
         if (!latest || !truth(property(latest, "table-editable"))) throw Error("Table editing is disabled.");
-        if (await locked(api, latest)) throw Error("This table is read-only.");
         if (signal.aborted || !sameGraph() || !table.isConnected) return;
         if (latest.content !== state.content) {
           state.content = latest.content; draw();
@@ -166,11 +148,11 @@
       if (!api?.get_block) return;
       const graph = api.get_state_from_store?.("git/current-repo");
       for (const [table, state] of states) {
-        if (!table.isConnected || state.graph !== graph || table.closest(".notes-read-only")
+        if (!table.isConnected || state.graph !== graph
           || !state.editor.isConnected) remove(table, state);
       }
       for (const table of document.querySelectorAll(".ls-block table:not(.notes-table-editor table)")) {
-        if (table.closest(".notes-read-only, .notes-table-editor, .references, .custom-query")) continue;
+        if (table.closest(".notes-table-editor, .references, .custom-query")) continue;
         const host = table.closest(".ls-block[blockid]");
         if (!host || host.querySelector("textarea:not(.notes-table-cell)")) continue;
         const block = await api.get_block(host.getAttribute("blockid"));
