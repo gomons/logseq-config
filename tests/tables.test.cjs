@@ -86,22 +86,29 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
     lock = mode === "page";
     ancestor = mode === "ancestor";
     let input = inputs()[0];
-    input.value = "forbidden";
+    document.querySelector(".ls-block").classList.add("notes-read-only");
+    await poll();
+    assert(document.querySelector(".notes-table-editor"));
+    input.value = mode;
     let n = writes.length;
     blur(input);
     await tick();
-    assert.equal(writes.length, n);
-    assert(
-      document
-        .querySelector('[role="status"]')
-        .textContent.includes("read-only"),
-    );
+    assert.equal(writes.length, n + 1);
+    assert(content.includes(mode));
   }
+  content = content.replace("table-editable:: true", "table-editable:: false");
+  const n = writes.length;
+  inputs()[0].value = "disabled";
+  blur(inputs()[0]);
+  await tick();
+  assert.equal(writes.length, n, "Removing opt-in prevents saves");
+  await poll();
+  assert(!document.querySelector(".notes-table-editor"));
   window.notesTableEditor.abort();
   assert(!document.querySelector(".notes-table-editor"));
   assert(!document.querySelector(".notes-table-source"));
   console.log(
-    "Table editor: blur saves, rapid cell switches queue both changes, inputs retain identity, escaping, row actions and inherited locks passed.",
+    "Table editor: blur saves, rapid cell switches queue both changes, inputs retain identity, escaping, row actions, read-only override and opt-in removal passed.",
   );
 })().catch((e) => {
   console.error(e);

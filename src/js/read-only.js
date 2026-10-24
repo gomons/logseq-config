@@ -133,6 +133,9 @@
         : event.target.parentElement;
     const page = target?.closest(".notes-read-only");
     if (!page) return;
+    // Explicit table editing overrides page and ancestor text locks.
+    // The editor handles its own events and validates opt-in again before saving.
+    if (target.closest(".notes-table-editor")) return;
     // Viewing controls must never permit content changes or block dragging.
     if (["beforeinput", "paste", "cut", "drop", "dragstart"].includes(event.type)) {
       if (editableSearch(target)) return;

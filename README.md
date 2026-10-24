@@ -60,7 +60,7 @@ block. Boolean properties have checkboxes; set them to `false` or remove them to
 | `read-only` | Page or block | Prevent text editing, including descendants; child false does not override a lock. |
 | `searchable` | Page or block | Search page or nested blocks. |
 | `checklist` | Page or block | All / Unchecked / Checked filters for CHECK items. |
-| `table-editable` | Table block | Edit cells and add/delete rows; read-only locks apply. |
+| `table-editable` | Table block | Edit cells and add/delete rows, including on read-only pages or blocks. |
 | `auto-contents` | Page or block | Pages tree and search. |
 | `auto-favorites` | Page or block | Native Favorites in saved order. |
 | `auto-tags` | Page or block | Tag cloud. |
@@ -89,7 +89,8 @@ Start a block with `CHECK` or `CHECKED` for interactive checkboxes with distinct
 styling from TODO tasks. `checklist-exclude` is used by a query in the notes graph;
 this repository does not implement that query.
 
-For tables, add `table-editable:: true` to the table's block. Cells wrap text and
+For tables, add `table-editable:: true` to the table's block. This explicitly
+overrides `read-only` for that table's controls; surrounding text stays locked. Cells wrap text and
 expand in height. Focus to edit; blur or Enter saves; Escape cancels. Add row and
 `−` add/delete rows. One rectangular Markdown table per block is supported;
 markup is shown as plain text. Conflicting edits require review and retry.

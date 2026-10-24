@@ -100,6 +100,15 @@ const update = async () => {
   assert(fire(query.querySelector("a span"), "dragstart"));
   assert(fire(query.querySelector(".block-content"), "click"));
   document.removeEventListener("mouseup", onMouseUp);
+  const editor = document.createElement("div");
+  editor.className = "notes-table-editor";
+  editor.innerHTML = '<textarea></textarea><button>Add row</button>';
+  block("child").append(editor);
+  for (const type of ["click", "keydown", "beforeinput", "paste", "cut"]) {
+    assert(!fire(editor.querySelector("textarea"), type), type);
+  }
+  assert(!fire(editor.querySelector("button"), "click"));
+  assert(fire(block("child").querySelector(".block-content"), "beforeinput"));
   pageProps = {};
   childValue = true;
   await update();
