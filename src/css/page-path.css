@@ -1,0 +1,116 @@
+/* Place Contents above the page, opposite the native navigation controls. */
+#head:has(> .notes-toolbar-navigation) {
+  position: relative;
+}
+#head .notes-toolbar-navigation {
+  min-width: 0;
+  gap: 0.4rem;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+.notes-toolbar-navigation[hidden],
+.notes-toolbar-navigation > [hidden] {
+  display: none !important;
+}
+#head .notes-contents-shortcut {
+  -webkit-tap-highlight-color: transparent;
+}
+#head .notes-contents-shortcut:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+#head .notes-contents-shortcut:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 2px;
+}
+/* Preserve the native full title for Logseq while displaying its leaf name. */
+.notes-has-namespace-title .title[data-ref] {
+  display: none !important;
+}
+.notes-namespace-title {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.notes-namespace-current {
+  overflow-wrap: anywhere;
+}
+
+/* Each path segment shrinks independently within the available toolbar space. */
+.notes-header-path {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ls-secondary-text-color);
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+.notes-header-path-segment {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+}
+.notes-header-path-separator {
+  flex-shrink: 0;
+}
+
+.notes-header-path-overflow {
+  display: none;
+  flex-shrink: 0;
+}
+.notes-header-path-overflow > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+.notes-header-path-overflow > summary::-webkit-details-marker {
+  display: none;
+}
+.notes-header-path-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  z-index: 30;
+  max-height: 50vh;
+  overflow: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 6px;
+  background: var(--ls-primary-background-color);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 20%);
+  white-space: normal;
+}
+.notes-header-path-overflow:not([open]) > .notes-header-path-menu {
+  display: none;
+}
+.notes-header-path-menu > a {
+  padding: 0.5rem 0.25rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .notes-header-path {
+    overflow: visible;
+  }
+  .notes-header-path > :not(.notes-header-path-parent) {
+    display: none;
+  }
+  .notes-header-path > .notes-header-path-overflow {
+    display: block;
+  }
+}
+

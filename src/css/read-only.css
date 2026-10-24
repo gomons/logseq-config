@@ -1,0 +1,15 @@
+/* Separate property blocks from the surrounding sidebar card. */
+.sidebar-item :is(.block-properties, .page-properties) {
+  background-color: var(--ls-primary-background-color);
+  background-color: color-mix(in srgb,
+    var(--ls-secondary-background-color) 90%, var(--ls-primary-text-color) 10%);
+  box-shadow: inset 0 0 0 1px var(--ls-border-color);
+  border-radius: 6px;
+}
+
+/* Reading mode keeps text selectable and native properties visible. */
+.notes-read-only .block-content {
+  -webkit-user-select: text;
+  user-select: text;
+}
+

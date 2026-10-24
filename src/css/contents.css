@@ -1,0 +1,88 @@
+/* Contents: file-backed pages grouped by namespace. */
+.notes-contents-tree,
+.notes-contents-tree ul {
+  list-style: none;
+  margin: 0;
+}
+.notes-contents-tree {
+  --notes-contents-gutter: 1.25rem;
+  padding-left: 0;
+}
+.notes-contents-tree ul {
+  padding-left: 1rem;
+}
+.notes-contents-tree li {
+  margin: 0.35rem 0;
+}
+.notes-contents-tree .notes-contents-page-pinned:has(+ li:not(.notes-contents-page-pinned)) {
+  border-bottom: 1px solid var(--ls-border-color);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.notes-contents-tree summary {
+  position: relative;
+  list-style: none;
+  padding-left: var(--notes-contents-gutter);
+  cursor: pointer;
+}
+.notes-contents-tree summary::-webkit-details-marker {
+  display: none;
+}
+.notes-contents-tree summary::before {
+  content: "";
+  position: absolute;
+  left: 0.2rem;
+  top: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  opacity: 0.5;
+  transform: translateY(-50%) rotate(-45deg);
+}
+.notes-contents-tree details[open] > summary::before {
+  transform: translateY(-70%) rotate(45deg);
+}
+.notes-contents-tree li > :is(a, .notes-contents-path) {
+  margin-left: var(--notes-contents-gutter);
+}
+.notes-contents-path {
+  overflow-wrap: anywhere;
+}
+.notes-contents-path-separator {
+  color: var(--ls-secondary-text-color);
+}
+
+/* The tree already lists eligible pages. */
+.page:has(.notes-contents-tree) > .references.page-tags {
+  display: none;
+}
+
+/* Explicit hashtags form a cloud weighted by referencing blocks. */
+.notes-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.85rem;
+}
+.notes-tag-cloud > a {
+  overflow-wrap: anywhere;
+}
+.notes-automatic-favorites {
+  gap: 0.35rem 0.65rem;
+}
+.notes-automatic-favorite {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.notes-automatic-favorite > a {
+  overflow-wrap: anywhere;
+}
+.notes-favorite-separator {
+  flex-shrink: 0;
+  color: var(--ls-secondary-text-color);
+}
+

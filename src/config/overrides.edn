@@ -1,0 +1,12 @@
+;; Project settings; these take priority over default.edn.
+{
+  :notes/contents-shortcut? true
+  :notes/desktop {
+    :contents-shortcut? true
+  }
+  :notes/mobile {
+    :contents-shortcut? true
+  }
+  :notes/hide-unlinked-references? true
+  :ui/enable-tooltip? false
+}

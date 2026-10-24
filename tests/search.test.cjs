@@ -5,7 +5,7 @@ const { parseHTML } = require("linkedom");
 const { window, document } = parseHTML(
   '<html><body><div class="page"><div class="ls-page-title"><span class="title" data-ref="root">Root</span></div><div class="ls-block" blockid="auto"><div class="block-content"></div></div><div class="page-hierarchy"><div><div class="foldable-title"><h2>Subpages</h2></div></div><ul class="namespaces"><li><span data-ref="root/books">Root/Books</span></li></ul></div></div></body></html>',
 );
-const file = fs.readFileSync("logseq/custom.js", "utf8");
+const moduleSource = (name) => fs.readFileSync(`src/js/${name}.js`, "utf8");
 let aliases = ["Reading List", "Книги"];
 const pages = () => [
   [
@@ -98,26 +98,11 @@ const type = (input, text) => {
   input.dispatchEvent(new window.Event("input", { bubbles: true }));
 };
 (async () => {
-  evaluate(file.split("/* Hide Unlinked References")[0]);
-  evaluate(
-    file
-      .split("/* Opt-in Contents:")[1]
-      .split("/* Search native query trees")[0]
-      .replace(/^/, "/* Opt-in Contents:"),
-  );
+  evaluate(moduleSource("aliases"));
+  evaluate(moduleSource("contents"));
   await tick();
-  evaluate(
-    file
-      .split("/* Page navigation and reference search. */")[1]
-      .split("/* Remember native navigation")[0],
-  );
-  evaluate(
-    file
-      .split(
-        "/* Search native query trees and catalogs without changing their query results. */",
-      )[1]
-      .split("/* Render CHECK tasks")[0],
-  );
+  evaluate(moduleSource("navigation"));
+  evaluate(moduleSource("catalog-search"));
   flush();
   let input = document.querySelector('[aria-label="Search all pages"]');
   assert(

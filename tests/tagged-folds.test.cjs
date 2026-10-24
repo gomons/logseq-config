@@ -2,7 +2,6 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const assert = require("node:assert/strict");
 const { parseHTML } = require("linkedom");
-const source = fs.readFileSync("logseq/custom.js", "utf8");
 const { window, document } = parseHTML(`<html><body><div class="page">
 <div class="ls-page-title" data-ref="test">Test</div>
 <div class="references page-tags"><div class="content"><div class="foldable-title"><span>Tagged pages</span><button>Filter</button></div></div><div class="initial">Pages</div></div>
@@ -37,14 +36,10 @@ const context = {
   console,
 };
 window.logseq = { api: { get_state_from_store: () => "graph" } };
-const nav = source
-  .split("/* Page navigation and reference search. */")[1]
-  .split("/* Remember native navigation folds")[0];
-const folds = source
-  .split("/* Remember native navigation folds")[1]
-  .split("/* Keep the Contents shortcut")[0];
+const nav = fs.readFileSync("src/js/navigation.js", "utf8");
+const folds = fs.readFileSync("src/js/folds.js", "utf8");
 vm.runInNewContext(nav, context);
-vm.runInNewContext("/* Remember native navigation folds" + folds, context);
+vm.runInNewContext(folds, context);
 while (frames.length) frames.shift()();
 const title = document.querySelector(".foldable-title");
 const content = title.parentElement.nextElementSibling;
@@ -73,7 +68,7 @@ click(title);
 assert(!content.classList.contains("hidden"), "A second tap expands");
 window.notesNavigationFolds.abort();
 // Simulate remount/reload: restore the saved mobile fold through the same module.
-vm.runInNewContext("/* Remember native navigation folds" + folds, context);
+vm.runInNewContext(folds, context);
 while (frames.length) frames.shift()();
 assert(content.classList.contains("hidden"), "Saved mobile fold is restored");
 window.notesNavigationFolds.abort();

@@ -1,0 +1,38 @@
+{
+  "logseq/custom.js": [
+    "src/js/config.js",
+    "src/js/aliases.js",
+    "src/js/unlinked-references.js",
+    "src/js/navigation.js",
+    "src/js/folds.js",
+    "src/js/contents-shortcut.js",
+    "src/js/page-path.js",
+    "src/js/read-only.js",
+    "src/js/subtree-search.js",
+    "src/js/contents.js",
+    "src/js/catalog-search.js",
+    "src/js/checklists.js",
+    "src/js/boolean-properties.js",
+    "src/js/favorites.js",
+    "src/js/list-properties.js",
+    "src/js/table-editor.js"
+  ],
+  "logseq/custom.css": [
+    "src/css/navigation.css",
+    "src/css/page-path.css",
+    "src/css/read-only.css",
+    "src/css/subtree-search.css",
+    "src/css/contents.css",
+    "src/css/catalogs.css",
+    "src/css/properties.css",
+    "src/css/toolbar.css",
+    "src/css/checklists.css",
+    "src/css/list-properties.css",
+    "src/css/subpages.css",
+    "src/css/table-editor.css"
+  ],
+  "logseq/config.edn": [
+    "src/config/default.edn",
+    "src/config/overrides.edn"
+  ]
+}

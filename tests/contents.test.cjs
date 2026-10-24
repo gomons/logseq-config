@@ -80,11 +80,8 @@ pages.push(
   },
   { "block/name": "agents", "block/file": { "file/path": "AGENTS.md" } },
 );
-const source = fs
-  .readFileSync("logseq/custom.js", "utf8")
-  .split("/* Opt-in Contents:")[1]
-  .split("/* Search native query")[0];
-vm.runInNewContext("/* Opt-in Contents:" + source, {
+const source = fs.readFileSync("src/js/contents.js", "utf8");
+vm.runInNewContext(source, {
   window,
   document,
   AbortController,

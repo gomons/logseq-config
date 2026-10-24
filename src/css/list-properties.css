@@ -1,0 +1,119 @@
+/* Native tag values remain the property editor's click target. */
+.block-properties div:has(> .notes-tag-property) {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-block: 0.15rem;
+}
+.page-property-value.notes-tag-property {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 0;
+}
+.page-property-value.notes-tag-property > :not(.notes-tag-editor) {
+  display: none;
+}
+.notes-tag-editor {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  font-size: 1rem;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+.notes-tag-chips {
+  display: contents;
+}
+.notes-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 100%;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 999px;
+  padding: 0.05rem 0.3rem 0.05rem 0.5rem;
+  background: var(--ls-primary-background-color);
+  color: var(--ls-link-text-color);
+}
+.notes-tag-chip > :is(span, a) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.notes-tag-chip.notes-alias-item {
+  border: 1px dashed var(--ls-secondary-text-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ls-primary-text-color);
+}
+.notes-alias-item > .notes-tag-action {
+  opacity: 0.65;
+}
+.notes-alias-item > .notes-tag-action:hover,
+.notes-alias-item > .notes-tag-action:focus-visible {
+  opacity: 1;
+}
+.notes-tag-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ls-secondary-text-color);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.notes-tag-action:hover {
+  background: var(--ls-tertiary-background-color);
+  color: var(--ls-primary-text-color);
+}
+.notes-tag-action:focus-visible,
+.notes-tag-input:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: 2px;
+}
+.notes-tag-input {
+  min-width: 0;
+  width: 12rem;
+  max-width: 100%;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 4px;
+  background: var(--ls-primary-background-color);
+  color: var(--ls-primary-text-color);
+  font: inherit;
+}
+.notes-tag-entry {
+  display: inline-flex;
+  flex: 0 1 15rem;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+.notes-tag-entry > .notes-tag-input {
+  flex: 1 1 0;
+  width: 0;
+}
+.notes-tag-entry > .notes-tag-action {
+  width: 28px;
+  height: 28px;
+}
+.notes-tag-entry[hidden],
+.notes-tag-input[hidden],
+.notes-tag-action[hidden] {
+  display: none;
+}
+.notes-tag-status {
+  font-size: 0.8rem;
+  color: var(--ls-secondary-text-color);
+}
+

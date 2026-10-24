@@ -23,12 +23,7 @@ window.logseq = {
     },
   },
 };
-const src = fs
-  .readFileSync("logseq/custom.js", "utf8")
-  .split(
-    "/* Edit tag and alias lists without replacing the native property edit target. */",
-  )[1]
-  .split("/* Opt-in editing for simple Markdown tables;")[0];
+const src = fs.readFileSync("src/js/list-properties.js", "utf8");
 vm.runInNewContext(src, {
   window,
   document,

@@ -2,7 +2,8 @@
   "name": "logseq-config",
   "private": true,
   "scripts": {
-    "test": "node --test tests/*.test.cjs",
+    "build": "python3 build.py",
+    "test": "python3 test.py",
     "format:tests": "prettier --write \"tests/*.cjs\""
   },
   "devDependencies": {

@@ -42,7 +42,7 @@ document.querySelector("#head .r button").getBoundingClientRect = () => ({
   right: 840,
   width: 40,
 });
-vm.runInNewContext(fs.readFileSync("logseq/custom.js", "utf8"), context);
+vm.runInNewContext(fs.readFileSync("dist/logseq/custom.js", "utf8"), context);
 for (const fn of timers) fn();
 assert(document.querySelector("#head .notes-contents-shortcut"));
 assert.equal(

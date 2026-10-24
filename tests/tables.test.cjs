@@ -30,20 +30,14 @@ window.logseq = {
     },
   },
 };
-vm.runInNewContext(
-  fs
-    .readFileSync("logseq/custom.js", "utf8")
-    .split("/* Opt-in editing for simple Markdown tables;")[1]
-    .replace(/^.*?\*\//s, ""),
-  {
-    window,
-    document,
-    AbortController,
-    setInterval: (cb) => ((poll = cb), 1),
-    clearInterval() {},
-    console,
-  },
-);
+vm.runInNewContext(fs.readFileSync("src/js/table-editor.js", "utf8"), {
+  window,
+  document,
+  AbortController,
+  setInterval: (cb) => ((poll = cb), 1),
+  clearInterval() {},
+  console,
+});
 const tick = () => new Promise((r) => setTimeout(r, 0));
 const inputs = () => [...document.querySelectorAll("tbody textarea")];
 const blur = (node) => node.dispatchEvent(new window.Event("blur"));
@@ -70,6 +64,24 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   document.querySelector('[aria-label="Delete row"]').click();
   await tick();
   assert.equal(document.querySelectorAll("tbody tr").length, 1);
+  // The editor's own textareas must not suppress refresh from source changes.
+  content =
+    "table-editable:: true\n| Polish | Russian |\n| --- | --- |\n| external | внешний |";
+  await poll();
+  assert.equal(inputs()[0].value, "external");
+  assert.equal(writes.length, 4, "Refreshing never writes note content");
+  const nativeEditor = document.createElement("textarea");
+  document.querySelector(".ls-block").append(nativeEditor);
+  content = content.replace("external", "after native edit");
+  await poll();
+  assert.equal(
+    inputs()[0].value,
+    "external",
+    "Native block editor pauses refresh",
+  );
+  nativeEditor.remove();
+  await poll();
+  assert.equal(inputs()[0].value, "after native edit");
   for (const mode of ["page", "ancestor"]) {
     lock = mode === "page";
     ancestor = mode === "ancestor";
