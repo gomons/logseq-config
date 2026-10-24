@@ -2465,8 +2465,14 @@ window.notesSubtreeSearch = new AbortController();
         const tr = document.createElement("tr");
         row.forEach((text, column) => {
           const cell = document.createElement(rowIndex ? "td" : "th");
-          const input = document.createElement("input");
+          const input = document.createElement("textarea");
+          input.rows = 1;
           input.className = "notes-table-cell";
+          const resize = () => {
+            input.style.height = "auto";
+            input.style.height = `${input.scrollHeight}px`;
+          };
+          input.addEventListener("input", resize, { signal });
           input.value = text;
           input.setAttribute("aria-label", `${parsed.rows[0][column]}, row ${rowIndex || "header"}`);
           input.setAttribute("enterkeyhint", "done");
@@ -2479,7 +2485,7 @@ window.notesSubtreeSearch = new AbortController();
           input.addEventListener("keydown", (event) => {
             if (event.isComposing) return;
             if (event.key === "Escape") {
-              event.preventDefault(); input.value = committed; input.blur();
+              event.preventDefault(); input.value = committed; resize(); input.blur();
             } else if (event.key === "Enter") {
               event.preventDefault(); input.blur();
             }
@@ -2498,6 +2504,10 @@ window.notesSubtreeSearch = new AbortController();
       const add = button("+ Add row", "Add row");
       add.addEventListener("click", () => void save((rows) => rows.push(rows[0].map(() => ""))), { signal });
       editor.replaceChildren(grid, add, status);
+      grid.querySelectorAll("textarea").forEach((input) => {
+        input.style.height = "auto";
+        input.style.height = `${input.scrollHeight}px`;
+      });
     };
     for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend", "click", "keydown", "keyup"])
       editor.addEventListener(type, (event) => event.stopPropagation(), { signal });

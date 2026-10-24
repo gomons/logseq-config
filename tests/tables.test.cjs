@@ -45,7 +45,7 @@ vm.runInNewContext(
   },
 );
 const tick = () => new Promise((r) => setTimeout(r, 0));
-const inputs = () => [...document.querySelectorAll("tbody input")];
+const inputs = () => [...document.querySelectorAll("tbody textarea")];
 const blur = (node) => node.dispatchEvent(new window.Event("blur"));
 (async () => {
   await tick();
