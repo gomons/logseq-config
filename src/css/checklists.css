@@ -1,7 +1,21 @@
+/* Keep the inline control centered on the text, including mobile font sizes. */
+.notes-check-controls {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  height: 1em;
+  line-height: 0;
+}
 /* Distinguish CHECK checklists from native TODO tasks in both themes. */
 .notes-check-controls > input[type="checkbox"] {
   --notes-check-color: color-mix(in srgb,
     var(--ls-link-text-color) 75%, var(--ls-primary-background-color) 25%);
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  vertical-align: middle;
   color: var(--notes-check-color);
   border: 1px solid var(--notes-check-color);
   border-radius: 4px;

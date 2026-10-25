@@ -35,3 +35,9 @@ assert.equal(
   declarations(".notes-table-editor table")["table-layout"],
   "fixed",
 );
+
+assert.equal(declarations(".notes-check-controls").display, "inline-flex");
+assert.equal(declarations(".notes-check-controls")["align-items"], "center");
+assert.equal(declarations(".notes-check-controls")["vertical-align"], "middle");
+assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["margin-top"], "0");
+assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["margin-bottom"], "0");
