@@ -41,3 +41,6 @@ assert.equal(declarations(".notes-check-controls")["align-items"], "center");
 assert.equal(declarations(".notes-check-controls")["vertical-align"], "middle");
 assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["margin-top"], "0");
 assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["margin-bottom"], "0");
+
+assert.equal(declarations(".notes-table-nowrap textarea")["overflow-x"], "hidden");
+assert.equal(declarations("table.notes-table-nowrap, .notes-table-nowrap table").width, "max-content");

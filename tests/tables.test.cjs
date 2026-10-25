@@ -108,6 +108,7 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   await poll();
   const nativeTable = document.querySelector(".ls-block > table");
   assert(nativeTable.classList.contains("notes-table-wrap"));
+  assert(nativeTable.style.minWidth, "Wrap mode gives the entire table a readable minimum width");
   assert(!document.querySelector(".notes-table-editor"));
   content = content.replace("table-wrap:: true", "table-wrap:: false") + "\ntable-editable:: true";
   await poll();

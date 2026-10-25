@@ -6,6 +6,13 @@
   const { signal } = controller;
   const states = new Map();
   const wrapped = new Set();
+  const resizeCell = (input) => {
+    const nowrap = input.closest(".notes-table-nowrap");
+    input.style.width = nowrap ? "1px" : "";
+    if (nowrap) input.style.width = `${Math.max(180, input.scrollWidth + 2)}px`;
+    input.style.height = "auto";
+    input.style.height = `${input.scrollHeight}px`;
+  };
   const wrapTable = (table, block, editor) => {
     const value = property(block, "table-wrap");
     const mode = value == null ? null : truth(value);
@@ -13,12 +20,15 @@
       node.classList.toggle("notes-table-wrap", mode === true);
       node.classList.toggle("notes-table-nowrap", mode === false);
     }
+    const columns = table.querySelector("tr")?.children.length || 1;
+    table.style.minWidth = mode === true ? `${columns * 14}rem` : "";
+    const grid = editor?.querySelector("table");
+    if (grid) grid.style.minWidth = mode === true ? `${columns * 14 + 3}rem` : "";
     if (mode != null) wrapped.add(table);
     else wrapped.delete(table);
     editor?.querySelectorAll("textarea").forEach((input) => {
       input.setAttribute("wrap", mode === false ? "off" : "soft");
-      input.style.height = "auto";
-      input.style.height = `${input.scrollHeight}px`;
+      resizeCell(input);
     });
   };
   let running = false;
@@ -112,8 +122,7 @@
           input.rows = 1;
           input.className = "notes-table-cell";
           const resize = () => {
-            input.style.height = "auto";
-            input.style.height = `${input.scrollHeight}px`;
+            resizeCell(input);
           };
           input.addEventListener("input", resize, { signal });
           input.value = text;
@@ -147,10 +156,7 @@
       const add = button("+ Add row", "Add row");
       add.addEventListener("click", () => void save((rows) => rows.push(rows[0].map(() => ""))), { signal });
       editor.replaceChildren(grid, add, status);
-      grid.querySelectorAll("textarea").forEach((input) => {
-        input.style.height = "auto";
-        input.style.height = `${input.scrollHeight}px`;
-      });
+      wrapTable(table, { content: state.content }, editor);
     };
     for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend", "click", "keydown", "keyup"])
       editor.addEventListener(type, (event) => event.stopPropagation(), { signal });
@@ -191,7 +197,10 @@
   const timer = setInterval(refresh, 750);
   signal.addEventListener("abort", () => {
     clearInterval(timer);
-    for (const table of wrapped) table.classList.remove("notes-table-wrap", "notes-table-nowrap");
+    for (const table of wrapped) {
+      table.classList.remove("notes-table-wrap", "notes-table-nowrap");
+      table.style.minWidth = "";
+    }
     wrapped.clear();
     for (const [table, state] of states) remove(table, state);
   }, { once: true });
