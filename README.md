@@ -91,7 +91,8 @@ styling from TODO tasks. `checklist-exclude` is used by a query in the notes gra
 this repository does not implement that query.
 
 `table-wrap:: true/false` works independently of editing. Omit it to keep the
-existing layout (editable tables wrap by default).
+existing layout (editable tables wrap by default). Explicit wrap mode keeps columns
+readable in a wider table; scroll the whole table horizontally, not individual cells.
 
 For tables, add `table-editable:: true` to the table's block. This explicitly
 overrides `read-only` for that table's controls; surrounding text stays locked. Cells wrap text and

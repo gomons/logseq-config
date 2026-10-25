@@ -51,6 +51,8 @@ table.notes-table-wrap :is(th, td), .notes-table-wrap textarea {
 }
 table.notes-table-nowrap, .notes-table-nowrap table {
   table-layout: auto;
+  width: max-content;
+  min-width: 100%;
 }
 table.notes-table-nowrap :is(th, td), .notes-table-nowrap textarea {
   white-space: pre;
@@ -58,5 +60,5 @@ table.notes-table-nowrap :is(th, td), .notes-table-nowrap textarea {
   word-break: normal;
 }
 .notes-table-nowrap textarea {
-  overflow-x: auto;
+  overflow-x: hidden;
 }
