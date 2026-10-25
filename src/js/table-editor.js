@@ -16,6 +16,17 @@
     const value = property(block, "table-wrap");
     const mode = value == null ? null : truth(value);
     const grid = editor?.querySelector("table");
+    const managed = mode != null || property(block, "table-editable") != null;
+    table.classList.toggle("notes-table-layout", managed);
+    for (const row of table.querySelectorAll("tr")) {
+      const action = row.querySelector(".notes-table-actions");
+      if (managed && !action) {
+        const cell = document.createElement(row.firstElementChild?.tagName === "TH" ? "th" : "td");
+        cell.className = "notes-table-actions";
+        cell.setAttribute("aria-hidden", "true");
+        row.append(cell);
+      } else if (!managed) action?.remove();
+    }
     const previous = layouts.get(table);
     const width = (editor || table.parentElement)?.clientWidth || window.innerWidth;
     if (previous?.content === block?.content && previous.mode === mode &&
@@ -42,7 +53,7 @@
           if (style) measure.style.font = style.font;
           measure.textContent = input ? input.value : cell.textContent;
           const textWidth = measure.getBoundingClientRect?.().width || measure.textContent.length * 8;
-          const width = Math.max(1, Math.ceil(textWidth)) + 32;
+          const width = cell.classList.contains("notes-table-actions") ? 40 : Math.max(1, Math.ceil(textWidth)) + 32;
           widths[column] = Math.max(widths[column] || 0, width);
         });
         const total = widths.reduce((sum, width) => sum + width, 0);
@@ -51,13 +62,15 @@
         // Shrink the widest columns first, preserving compact dates and numbers.
         let fittedWidths = widths;
         if (fitted < total) {
-          let low = 0, high = Math.max(...widths);
+          const contentWidths = widths.slice(0, -1);
+          const budget = Math.max(0, fitted - 40);
+          let low = 0, high = Math.max(...contentWidths);
           for (let i = 0; i < 40; i++) {
             const cap = (low + high) / 2;
-            if (widths.reduce((sum, size) => sum + Math.min(size, cap), 0) > fitted) high = cap;
+            if (contentWidths.reduce((sum, size) => sum + Math.min(size, cap), 0) > budget) high = cap;
             else low = cap;
           }
-          fittedWidths = widths.map((size) => Math.min(size, low));
+          fittedWidths = [...contentWidths.map((size) => Math.min(size, low)), 40];
         }
         for (const row of rows) [...row.children].forEach((cell, column) => {
           cell.style.width = `${fittedWidths[column] / fitted * 100}%`;
@@ -65,7 +78,7 @@
         target.style.width = `${fitted}px`;
       } finally { measure.remove(); }
     }
-    if (mode != null) wrapped.add(table);
+    if (managed) wrapped.add(table);
     else wrapped.delete(table);
     editor?.querySelectorAll("textarea").forEach((input) => {
       input.setAttribute("wrap", mode === false ? "off" : "soft");
@@ -185,12 +198,15 @@
           }, { signal });
           cell.append(input); tr.append(cell);
         });
+        const action = document.createElement(rowIndex ? "td" : "th");
+        action.className = "notes-table-actions";
         if (rowIndex) {
           const minus = button("−", "Delete row");
           minus.addEventListener("click", () => void save((rows) => rows.splice(rowIndex, 1)), { signal });
           minus.classList.add("notes-table-delete");
-          tr.lastElementChild.append(minus);
+          action.append(minus);
         }
+        tr.append(action);
         (rowIndex ? body : head).append(tr);
       });
       grid.append(head, body);
@@ -239,7 +255,8 @@
   signal.addEventListener("abort", () => {
     clearInterval(timer);
     for (const table of wrapped) {
-      table.classList.remove("notes-table-wrap", "notes-table-nowrap");
+      table.querySelectorAll(".notes-table-actions").forEach((cell) => cell.remove());
+      table.classList.remove("notes-table-wrap", "notes-table-nowrap", "notes-table-layout");
       table.style.minWidth = "";
       table.style.width = "";
       table.querySelectorAll("th, td").forEach((cell) => { cell.style.width = ""; });

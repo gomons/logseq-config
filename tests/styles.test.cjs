@@ -44,3 +44,8 @@ assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["mar
 
 assert.equal(declarations(".notes-table-wrap textarea, .notes-table-nowrap textarea")["overflow-x"], "hidden");
 assert.equal(declarations("table.notes-table-wrap, .notes-table-wrap table")["max-width"], "100%");
+
+assert.equal(
+  declarations('.notes-check-controls,\n.block-content :is(.todo, .done) > input[type="checkbox"]').top,
+  "-0.1em",
+);

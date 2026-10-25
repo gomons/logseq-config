@@ -1,4 +1,11 @@
-/* Keep the inline control centered on the text, including mobile font sizes. */
+/* Align task controls with the block bullet, above the font's middle baseline.
+   Use em so desktop zoom and mobile font sizes keep the same offset. */
+.notes-check-controls,
+.block-content :is(.todo, .done) > input[type="checkbox"] {
+  position: relative;
+  top: -0.1em;
+}
+/* The CHECK wrapper preserves inline wrapping of long task text. */
 .notes-check-controls {
   display: inline-flex;
   align-items: center;
