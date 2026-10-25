@@ -5,6 +5,22 @@
   window.notesTableEditor = controller;
   const { signal } = controller;
   const states = new Map();
+  const wrapped = new Set();
+  const wrapTable = (table, block, editor) => {
+    const value = property(block, "table-wrap");
+    const mode = value == null ? null : truth(value);
+    for (const node of [table, editor].filter(Boolean)) {
+      node.classList.toggle("notes-table-wrap", mode === true);
+      node.classList.toggle("notes-table-nowrap", mode === false);
+    }
+    if (mode != null) wrapped.add(table);
+    else wrapped.delete(table);
+    editor?.querySelectorAll("textarea").forEach((input) => {
+      input.setAttribute("wrap", mode === false ? "off" : "soft");
+      input.style.height = "auto";
+      input.style.height = `${input.scrollHeight}px`;
+    });
+  };
   let running = false;
   const truth = (value) => value === true || String(value).toLowerCase() === "true";
   const property = (block, key) => block?.content?.match(
@@ -139,6 +155,7 @@
     for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend", "click", "keydown", "keyup"])
       editor.addEventListener(type, (event) => event.stopPropagation(), { signal });
     table.after(editor); table.classList.add("notes-table-source"); states.set(table, state); draw();
+    wrapTable(table, block, editor);
   };
   const refresh = async () => {
     if (running || signal.aborted) return;
@@ -147,6 +164,7 @@
       const api = window.logseq?.api;
       if (!api?.get_block) return;
       const graph = api.get_state_from_store?.("git/current-repo");
+      for (const table of wrapped) if (!table.isConnected) wrapped.delete(table);
       for (const [table, state] of states) {
         if (!table.isConnected || state.graph !== graph
           || !state.editor.isConnected) remove(table, state);
@@ -159,6 +177,7 @@
         if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
         if (!table.isConnected) continue;
         const state = states.get(table);
+        wrapTable(table, block, state?.editor);
         if (!block || !truth(property(block, "table-editable")) || !parse(block.content)) {
           if (state) remove(table, state); continue;
         }
@@ -172,6 +191,8 @@
   const timer = setInterval(refresh, 750);
   signal.addEventListener("abort", () => {
     clearInterval(timer);
+    for (const table of wrapped) table.classList.remove("notes-table-wrap", "notes-table-nowrap");
+    wrapped.clear();
     for (const [table, state] of states) remove(table, state);
   }, { once: true });
   void refresh();

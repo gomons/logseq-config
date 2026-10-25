@@ -38,3 +38,25 @@
   font-size: 0.8rem;
   color: var(--ls-secondary-text-color);
 }
+
+/* Explicit wrapping is independent of interactive editing. Keep hard line breaks. */
+table.notes-table-wrap, .notes-table-wrap table {
+  width: 100%;
+  table-layout: fixed;
+}
+table.notes-table-wrap :is(th, td), .notes-table-wrap textarea {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+table.notes-table-nowrap, .notes-table-nowrap table {
+  table-layout: auto;
+}
+table.notes-table-nowrap :is(th, td), .notes-table-nowrap textarea {
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.notes-table-nowrap textarea {
+  overflow-x: auto;
+}
