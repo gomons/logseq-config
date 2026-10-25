@@ -60,7 +60,7 @@ block. Boolean properties have checkboxes; set them to `false` or remove them to
 | `read-only` | Page or block | Prevent text editing, including descendants; child false does not override a lock. |
 | `searchable` | Page or block | Search page or nested blocks. |
 | `checklist` | Page or block | All / Unchecked / Checked filters for CHECK items. |
-| `table-wrap` | Table block | `true` wraps long lines; `false` keeps their width. Explicit line breaks remain in both modes. |
+| `table-wrap` | Table block | `true` fits the viewport and wraps text; `false` keeps content width with horizontal scrolling. Explicit line breaks remain in both modes. |
 | `table-editable` | Table block | Edit cells and add/delete rows, including on read-only pages or blocks. |
 | `auto-contents` | Page or block | Pages tree and search. |
 | `auto-favorites` | Page or block | Native Favorites in saved order. |
@@ -91,8 +91,10 @@ styling from TODO tasks. `checklist-exclude` is used by a query in the notes gra
 this repository does not implement that query.
 
 `table-wrap:: true/false` works independently of editing. Omit it to keep the
-existing layout (editable tables wrap by default). Explicit wrap mode keeps columns
-readable in a wider table; scroll the whole table horizontally, not individual cells.
+existing layout (editable tables wrap by default). Column widths follow their text;
+short tables are not stretched. `false` uses the content width and one table scroller;
+`true` shrinks the widest columns first to fit the available width and wraps text,
+preserving compact columns such as dates whenever space permits.
 
 For tables, add `table-editable:: true` to the table's block. This explicitly
 overrides `read-only` for that table's controls; surrounding text stays locked. Cells wrap text and

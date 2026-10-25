@@ -6,24 +6,65 @@
   const { signal } = controller;
   const states = new Map();
   const wrapped = new Set();
+  const layouts = new WeakMap();
   const resizeCell = (input) => {
-    const nowrap = input.closest(".notes-table-nowrap");
-    input.style.width = nowrap ? "1px" : "";
-    if (nowrap) input.style.width = `${Math.max(180, input.scrollWidth + 2)}px`;
+    input.style.width = "100%";
     input.style.height = "auto";
     input.style.height = `${input.scrollHeight}px`;
   };
   const wrapTable = (table, block, editor) => {
     const value = property(block, "table-wrap");
     const mode = value == null ? null : truth(value);
+    const grid = editor?.querySelector("table");
+    const previous = layouts.get(table);
+    const width = (editor || table.parentElement)?.clientWidth || window.innerWidth;
+    if (previous?.content === block?.content && previous.mode === mode &&
+        previous.grid === grid && previous.width === width) return;
+    layouts.set(table, { content: block?.content, mode, grid, width });
     for (const node of [table, editor].filter(Boolean)) {
       node.classList.toggle("notes-table-wrap", mode === true);
       node.classList.toggle("notes-table-nowrap", mode === false);
     }
-    const columns = table.querySelector("tr")?.children.length || 1;
-    table.style.minWidth = mode === true ? `${columns * 14}rem` : "";
-    const grid = editor?.querySelector("table");
-    if (grid) grid.style.minWidth = mode === true ? `${columns * 14 + 3}rem` : "";
+    for (const target of [table, grid].filter(Boolean)) {
+      target.style.minWidth = "";
+      target.style.width = "";
+      target.querySelectorAll("th, td").forEach((cell) => { cell.style.width = ""; });
+      if (mode == null) continue;
+      const rows = [...target.querySelectorAll("tr")];
+      const widths = [];
+      const measure = document.createElement("span");
+      measure.style.cssText = "position:absolute;visibility:hidden;white-space:pre;pointer-events:none";
+      document.body.append(measure);
+      try {
+        for (const row of rows) [...row.children].forEach((cell, column) => {
+          const input = cell.querySelector("textarea");
+          const style = window.getComputedStyle?.(input || cell);
+          if (style) measure.style.font = style.font;
+          measure.textContent = input ? input.value : cell.textContent;
+          const textWidth = measure.getBoundingClientRect?.().width || measure.textContent.length * 8;
+          const width = Math.max(1, Math.ceil(textWidth)) + 32;
+          widths[column] = Math.max(widths[column] || 0, width);
+        });
+        const total = widths.reduce((sum, width) => sum + width, 0);
+        const available = (editor || table.parentElement)?.clientWidth || window.innerWidth || total;
+        const fitted = mode === true ? Math.min(total, available) : total;
+        // Shrink the widest columns first, preserving compact dates and numbers.
+        let fittedWidths = widths;
+        if (fitted < total) {
+          let low = 0, high = Math.max(...widths);
+          for (let i = 0; i < 40; i++) {
+            const cap = (low + high) / 2;
+            if (widths.reduce((sum, size) => sum + Math.min(size, cap), 0) > fitted) high = cap;
+            else low = cap;
+          }
+          fittedWidths = widths.map((size) => Math.min(size, low));
+        }
+        for (const row of rows) [...row.children].forEach((cell, column) => {
+          cell.style.width = `${fittedWidths[column] / fitted * 100}%`;
+        });
+        target.style.width = `${fitted}px`;
+      } finally { measure.remove(); }
+    }
     if (mode != null) wrapped.add(table);
     else wrapped.delete(table);
     editor?.querySelectorAll("textarea").forEach((input) => {
@@ -144,13 +185,13 @@
           }, { signal });
           cell.append(input); tr.append(cell);
         });
-        const action = document.createElement(rowIndex ? "td" : "th");
         if (rowIndex) {
           const minus = button("−", "Delete row");
           minus.addEventListener("click", () => void save((rows) => rows.splice(rowIndex, 1)), { signal });
-          action.append(minus);
+          minus.classList.add("notes-table-delete");
+          tr.lastElementChild.append(minus);
         }
-        tr.append(action); (rowIndex ? body : head).append(tr);
+        (rowIndex ? body : head).append(tr);
       });
       grid.append(head, body);
       const add = button("+ Add row", "Add row");
@@ -183,11 +224,11 @@
         if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
         if (!table.isConnected) continue;
         const state = states.get(table);
+        if (state?.saving || state?.editor.contains(document.activeElement)) continue;
         wrapTable(table, block, state?.editor);
         if (!block || !truth(property(block, "table-editable")) || !parse(block.content)) {
           if (state) remove(table, state); continue;
         }
-        if (state?.saving || state?.editor.contains(document.activeElement)) continue;
         if (state && state.content !== block.content) remove(table, state);
         if (!states.has(table)) mount(table, block, graph);
       }
@@ -200,6 +241,8 @@
     for (const table of wrapped) {
       table.classList.remove("notes-table-wrap", "notes-table-nowrap");
       table.style.minWidth = "";
+      table.style.width = "";
+      table.querySelectorAll("th, td").forEach((cell) => { cell.style.width = ""; });
     }
     wrapped.clear();
     for (const [table, state] of states) remove(table, state);
