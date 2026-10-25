@@ -18,7 +18,7 @@ const declarations = (selector) => {
 };
 assert.equal(declarations(".notes-table-source").display, "none");
 assert.equal(declarations(".notes-table-editor")["overflow-x"], "auto");
-assert(declarations(".notes-table-editor textarea:focus")["border-color"]);
+assert(declarations(".notes-table-editor textarea:focus")["outline"]);
 assert(
   declarations('.notes-check-controls > input[type="checkbox"]:checked')[
     "background-image"
@@ -42,5 +42,5 @@ assert.equal(declarations(".notes-check-controls")["vertical-align"], "middle");
 assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["margin-top"], "0");
 assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["margin-bottom"], "0");
 
-assert.equal(declarations(".notes-table-nowrap textarea")["overflow-x"], "hidden");
-assert.equal(declarations("table.notes-table-nowrap, .notes-table-nowrap table").width, "max-content");
+assert.equal(declarations(".notes-table-wrap textarea, .notes-table-nowrap textarea")["overflow-x"], "hidden");
+assert.equal(declarations("table.notes-table-wrap, .notes-table-wrap table")["max-width"], "100%");

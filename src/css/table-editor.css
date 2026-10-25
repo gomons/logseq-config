@@ -1,9 +1,8 @@
 /* Optional Markdown table editor. */
 .notes-table-source { display: none !important; }
-.notes-table-editor { overflow-x: auto; margin: 0.5rem 0; }
+.notes-table-editor { overflow-x: auto; margin: 0; }
 .notes-table-editor table { width: 100%; table-layout: fixed; }
-.notes-table-editor th:last-child, .notes-table-editor td:last-child { width: 3rem; }
-.notes-table-editor th, .notes-table-editor td { vertical-align: top; }
+.notes-table-editor th, .notes-table-editor td { position: relative; }
 .notes-table-editor button {
   padding: 0.3rem 0.5rem;
   min-height: 32px;
@@ -21,17 +20,18 @@
   resize: none;
   overflow: hidden;
   white-space: pre-wrap;
-  padding: 0.3rem;
-  border: 1px solid transparent;
+  padding: 0;
+  margin: 0;
+  border: 0;
   border-radius: 4px;
   background: transparent;
   color: var(--ls-primary-text-color);
   font: inherit;
 }
 .notes-table-editor textarea:focus {
-  border-color: var(--ls-link-text-color);
+  outline: 1px solid var(--ls-link-text-color);
+  outline-offset: 2px;
   background: var(--ls-primary-background-color);
-  outline: none;
 }
 .notes-table-editor [role="status"] {
   display: block;
@@ -39,26 +39,52 @@
   color: var(--ls-secondary-text-color);
 }
 
-/* Explicit wrapping is independent of interactive editing. Keep hard line breaks. */
-table.notes-table-wrap, .notes-table-wrap table {
-  width: 100%;
-  table-layout: fixed;
+/* table-wrap=true: fit available width and wrap text.
+   table-wrap=false: content width and one horizontal scroller. */
+:where(div):has(> table.notes-table-wrap),
+:where(div):has(> table.notes-table-nowrap) {
+  overflow-x: auto !important;
+  max-width: 100%;
+  min-width: 0;
 }
-table.notes-table-wrap :is(th, td), .notes-table-wrap textarea {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: normal;
-}
+table.notes-table-wrap, .notes-table-wrap table,
 table.notes-table-nowrap, .notes-table-nowrap table {
-  table-layout: auto;
-  width: max-content;
-  min-width: 100%;
+  table-layout: fixed;
+  min-width: 0;
 }
 table.notes-table-nowrap :is(th, td), .notes-table-nowrap textarea {
   white-space: pre;
   overflow-wrap: normal;
   word-break: normal;
 }
-.notes-table-nowrap textarea {
+table.notes-table-wrap, .notes-table-wrap table {
+  max-width: 100%;
+}
+table.notes-table-wrap :is(th, td), .notes-table-wrap textarea {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+table.notes-table-wrap :is(th, td), table.notes-table-nowrap :is(th, td) {
+  box-sizing: border-box;
+}
+.notes-table-wrap textarea, .notes-table-nowrap textarea {
   overflow-x: hidden;
+  min-width: 0;
+}
+
+/* Row actions overlay the last cell rather than adding a data column. */
+.notes-table-editor .notes-table-delete {
+  position: absolute;
+  right: 0;
+  top: 0;
+  opacity: 0;
+  background: var(--ls-primary-background-color);
+}
+.notes-table-editor tr:hover .notes-table-delete,
+.notes-table-editor tr:focus-within .notes-table-delete {
+  opacity: 1;
+}
+@media (hover: none) {
+  .notes-table-editor .notes-table-delete { opacity: 1; }
 }
