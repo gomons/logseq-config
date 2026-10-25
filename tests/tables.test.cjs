@@ -108,6 +108,7 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   await poll();
   const nativeTable = document.querySelector(".ls-block > table");
   assert(nativeTable.classList.contains("notes-table-wrap"));
+  assert(nativeTable.classList.contains("notes-table-layout"), "View mode reserves the action gutter too");
   assert(nativeTable.style.width, "Wrap mode sizes the whole table from content");
   assert(!document.querySelector(".notes-table-editor"));
   content = content.replace("table-wrap:: true", "table-wrap:: false") + "\ntable-editable:: true";
@@ -133,7 +134,8 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   const fittedGrid = document.querySelector(".notes-table-editor table");
   assert.equal(parseFloat(fittedGrid.style.width), 500);
   const headers = [...fittedGrid.querySelectorAll("th")];
-  assert.equal(headers.length, 4, "Editing must not add a layout column");
+  assert.equal(headers.length, 5, "Reserve a separate action column");
+  assert(document.querySelector('[aria-label="Delete row"]').parentElement.classList.contains("notes-table-actions"));
   const pixels = (cell) => parseFloat(cell.style.width) * 5;
   // The DOM fixture measures text at 8 px per character, plus 32 px padding.
   assert(Math.abs(pixels(headers[1]) - 96) < 0.01, "Keep the full date width");

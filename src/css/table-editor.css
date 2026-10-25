@@ -73,13 +73,20 @@ table.notes-table-wrap :is(th, td), table.notes-table-nowrap :is(th, td) {
   min-width: 0;
 }
 
-/* Row actions overlay the last cell rather than adding a data column. */
+/* A dedicated, always-reserved column separates actions from cell content. */
+.block-content table .notes-table-actions {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+}
 .notes-table-editor .notes-table-delete {
-  position: absolute;
-  right: 0;
-  top: 0;
+  position: static;
+  width: 40px;
+  box-sizing: border-box;
   opacity: 0;
-  background: var(--ls-primary-background-color);
+  background: transparent;
 }
 .notes-table-editor tr:hover .notes-table-delete,
 .notes-table-editor tr:focus-within .notes-table-delete {
