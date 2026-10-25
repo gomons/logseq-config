@@ -35,7 +35,7 @@
     if (!content.isConnected || content.querySelector(".notes-check-controls")) return;
     const host = content.closest(".ls-block[blockid]");
     const uuid = host?.getAttribute("blockid");
-    if (!uuid || host.querySelector("textarea")) return;
+    if (!uuid || host.querySelector("textarea:not(.notes-table-cell)")) return;
     const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
     let text;
     while ((text = walker.nextNode()) && !text.textContent.trim()) {}

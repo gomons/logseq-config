@@ -5,6 +5,9 @@ const { parseHTML } = require("linkedom");
 const { window, document } = parseHTML(
   '<html><body><div class="ls-block" blockid="a"><div class="block-properties"><div><span class="page-property-key" data-ref="alias">alias:</span><span class="page-property-value"><a href="#/page/old">Old</a></span></div></div></div></body></html>',
 );
+const tableCell = document.createElement("textarea");
+tableCell.className = "notes-table-cell";
+document.querySelector(".ls-block").append(tableCell);
 let content =
     "read-only:: true\nalias:: Old, Long tag, Тег\nother-property:: Keep\nBody",
   writes = [],
