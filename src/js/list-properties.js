@@ -189,7 +189,7 @@
           key?.textContent.replace(/:\s*$/, "").trim() || "").toLowerCase();
         const host = element.closest(".ls-block[blockid]");
         const uuid = host?.getAttribute("blockid");
-        if (!["tags", "alias", "aliases"].includes(name) || !uuid || host.querySelector("textarea")) continue;
+        if (!["tags", "alias", "aliases"].includes(name) || !uuid || host.querySelector("textarea:not(.notes-table-cell)")) continue;
         if (!blocks.has(uuid)) blocks.set(uuid, api.get_block(uuid));
         const block = await blocks.get(uuid);
         if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;

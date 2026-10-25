@@ -63,7 +63,7 @@
           keyElement?.textContent.replace(/:\s*$/, "").trim() || "").toLowerCase();
         const uuid = host?.getAttribute("blockid");
         const existing = controls.get(element);
-        if (!uuid || ["tags", "alias", "aliases"].includes(key) || !/^[\w-]+$/.test(key) || !["true", "false"].includes(value) || host.querySelector("textarea")) {
+        if (!uuid || ["tags", "alias", "aliases"].includes(key) || !/^[\w-]+$/.test(key) || !["true", "false"].includes(value) || host.querySelector("textarea:not(.notes-table-cell)")) {
           existing?.button.remove();
           controls.delete(element);
           continue;
