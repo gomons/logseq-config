@@ -63,3 +63,8 @@ table.notes-table-nowrap :is(th, td), .notes-table-nowrap .notes-table-cell-mirr
 .notes-table-add-actions { display: flex; gap: 1rem; padding: 4px 0; }
 .notes-table-add-actions button { padding: 0; border: 0; background: transparent; color: var(--ls-link-text-color); font: inherit; cursor: pointer; }
 .notes-table-add-actions button:hover { text-decoration: underline; }
+
+/* Header boundaries resize only their adjacent columns in wrap mode. */
+.notes-table-resizer { position: fixed; width: 10px; padding: 0; margin: 0; border: 0; background: transparent; cursor: col-resize; touch-action: none; pointer-events: auto; }
+.notes-table-resizer:hover, .notes-table-resizer.is-resizing { background: var(--ls-link-text-color); opacity: 0.35; }
+.notes-table-editor th .notes-table-cell-mirror { overflow-wrap: anywhere; }

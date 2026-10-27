@@ -108,6 +108,11 @@ position and Escape cancels the drag. Handles appear on hover on desktop and
 remain visible on touch devices. Crosses on the right delete rows; crosses below
 the table delete columns. The last row and column are kept. `Add row` appends an
 empty row; `Add column` appends a column named `Column`.
+With `table-wrap:: true`, drag a header boundary to resize its two adjacent
+columns without changing the total width. Sizes are temporary, local to the
+current device, survive Edit/View switches, and reset on reload; no properties
+are saved. Resizing also works without `table-editable` and on read-only blocks.
+Escape cancels resizing.
 
 Native and editable tables share a thin grid, a uniform body background and bold,
 centered headers using the theme's secondary background. Space above the table
