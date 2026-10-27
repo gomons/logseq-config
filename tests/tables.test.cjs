@@ -3,8 +3,11 @@ const fs = require("fs"),
   assert = require("assert");
 const { parseHTML } = require("linkedom");
 const { window, document } = parseHTML(
-  '<html><body><div class="ls-block" blockid="b"><table><tr><td>Original</td></tr></table></div></body></html>',
+  '<html><body><div class="ls-block" blockid="b"><table><tr><td>Polish</td><td>Russian</td></tr></table></div></body></html>',
 );
+document.querySelectorAll("td").forEach((cell, i) => {
+  cell.getBoundingClientRect = () => ({width: [180, 420][i]});
+});
 let content =
     "table-editable:: true\n| Polish | Russian |\n| --- | --- |\n| kot | кот |",
   lock = false,
@@ -46,12 +49,14 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   assert(document.querySelector(".notes-table-editor"));
   assert(!document.querySelector(".notes-table-editor button"));
   assert.equal(inputs().length, 2);
+  assert.deepEqual([...document.querySelectorAll("col")].map(c => c.style.width), ["30%", "70%"]);
+  assert.equal(document.querySelector(".notes-table-editor table").style.tableLayout, "fixed");
   const [a,b] = inputs();
   a.value = "kot | pies"; blur(a);
   b.value = "первая\nвторая"; blur(b);
   await tick(); await tick();
   assert(content.includes("kot \\| pies"));
-  assert(content.includes("первая<br>вторая"));
+  assert(content.includes("<p>первая<br>вторая</p>"));
   assert.equal(inputs()[0], a, "Saving retains input identity");
   a.value = "one\ntwo";
   a.dispatchEvent(new window.Event("input"));
@@ -85,6 +90,12 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   assert(!native.querySelector(".notes-table-actions, .notes-table-row-handle"));
   content = content.replace("table-editable:: false", "table-editable:: true");
   await poll();
+  const multiline = inputs()[1];
+  multiline.value = "<literal> & text\n123\n\nlast | line";
+  blur(multiline); await tick(); await tick();
+  assert(content.includes("<p>&lt;literal&gt; &amp; text<br>123<br><br>last \\| line</p>"));
+  content += "\nrefresh:: true"; await poll();
+  assert.equal(inputs()[1].value, "<literal> & text\n123\n\nlast | line");
   const current = inputs()[0];
   content += "\nchanged:: true";
   current.value = "must not overwrite"; blur(current);

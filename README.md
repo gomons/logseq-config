@@ -98,7 +98,7 @@ breaks remain in both modes.
 For tables, add `table-editable:: true` to the table's block. This explicitly
 overrides `read-only` for that table's controls; surrounding text stays locked. Cells wrap text and
 expand in height. Focus to edit; blur or Enter saves; Escape cancels. Shift+Enter
-inserts a line break, stored as `<br>` in Markdown.
+inserts a line break, stored as `<p>first<br>second</p>` in Markdown so Logseq renders it natively.
 
 On touch devices, Enter inserts a newline; leaving the cell saves it. On desktop,
 Enter saves and Shift+Enter inserts a newline. Inputs overlay text-sized cells

@@ -43,6 +43,16 @@
       || rows.some((row) => row.length !== rows[0].length)) return null;
     return { lines, indices, rows };
   };
+  const decodeCell = (text) => {
+    const paragraph = text.match(/^<p>([\s\S]*)<\/p>$/i);
+    const value = (paragraph ? paragraph[1] : text).replace(/<br\s*\/?>/gi, "\n");
+    // Only decode entities in our HTML paragraph format, not ordinary Markdown.
+    return paragraph ? value.replace(/&(amp|lt|gt|quot|#39);/g,
+      (_, key) => ({ amp: "&", lt: "<", gt: ">", quot: '\"', "#39": "'" })[key]) : value;
+  };
+  const encodeCell = (value) => value.includes("\n")
+    ? `<p>${value.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</p>` : value;
   const serialize = (parsed) => {
     const escape = (value) => value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
     const indent = parsed.lines[parsed.indices[0]].match(/^\s*/)[0];
@@ -54,6 +64,11 @@
     state.editor.remove(); table.classList.remove("notes-table-source"); states.delete(table);
   };
   const mount = (table, block, graph) => {
+    // Capture the native layout before hiding it; textarea content must not
+    // redistribute columns when editing is enabled.
+    const nativeCells = [...(table.querySelector("tr")?.children || [])];
+    const widths = nativeCells.map((cell) => cell.getBoundingClientRect().width);
+    const totalWidth = widths.reduce((sum, width) => sum + width, 0);
     const editor = document.createElement("div");
     editor.className = "notes-table-editor";
     const status = document.createElement("span"); status.setAttribute("role", "status");
@@ -110,7 +125,7 @@
           mirror.setAttribute("aria-hidden", "true");
           const resize = () => { mirror.textContent = input.value + "\u200b"; };
           input.addEventListener("input", resize, { signal });
-          input.value = text.replace(/<br\s*\/?>/gi, "\n");
+          input.value = decodeCell(text);
           input.setAttribute("aria-label", `${parsed.rows[0][column]}, row ${rowIndex || "header"}`);
           input.setAttribute("enterkeyhint", "enter");
           resize();
@@ -118,7 +133,7 @@
           input.addEventListener("blur", async () => {
             const value = input.value.replace(/\r\n?/g, "\n");
             if (value === committed) return;
-            if (await save((rows) => { rows[rowIndex][column] = value.replace(/\n/g, "<br>"); }, false)) committed = value;
+            if (await save((rows) => { rows[rowIndex][column] = encodeCell(value); }, false)) committed = value;
           }, { signal });
           input.addEventListener("keydown", (event) => {
             if (event.isComposing) return;
@@ -134,6 +149,18 @@
         });
         (rowIndex ? body : head).append(tr);
       });
+      if (totalWidth > 0 && widths.length === parsed.rows[0].length) {
+        const columns = document.createElement("colgroup");
+        widths.forEach((width) => {
+          const col = document.createElement("col");
+          col.style.width = `${100 * width / totalWidth}%`;
+          columns.append(col);
+        });
+        grid.style.tableLayout = "fixed";
+        if (property({ content: state.content }, "table-wrap") === "false")
+          grid.style.width = `${totalWidth}px`;
+        grid.append(columns);
+      }
       grid.append(head, body);
       editor.replaceChildren(grid, status);
       wrapTable(table, { content: state.content }, editor);
