@@ -102,10 +102,16 @@ inserts a line break, stored as `<p>first<br>second</p>` in Markdown so Logseq r
 
 On touch devices, Enter inserts a newline; leaving the cell saves it. On desktop,
 Enter saves and Shift+Enter inserts a newline. Inputs overlay text-sized cells
-without adding intrinsic input width or control gutters. Adding, deleting and
-reordering rows or columns is left to Logseq's Markdown editor.
-Without `table-editable:: true`, the native table is used; only an explicit
-`table-wrap` setting changes its layout.
+without adding intrinsic input width or control gutters. Drag the handles to the
+left of rows or above headers to reorder them; the insertion line previews the
+position and Escape cancels the drag. Handles appear on hover on desktop and
+remain visible on touch devices. Adding and deleting rows or columns is left to
+Logseq's Markdown editor.
+
+Native and editable tables share a thin grid, a uniform body background and bold,
+centered headers using the theme's secondary background. Space above the table
+is reserved in both modes so enabling editing does not shift it vertically.
+Without `table-editable:: true`, Logseq renders the table with these shared styles.
 
 One rectangular Markdown table per block is supported. Other markup is shown
 as plain text. Conflicting edits require review and retry.
