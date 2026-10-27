@@ -2,7 +2,7 @@
 .notes-table-source { display: none !important; }
 .notes-table-editor { overflow-x: auto; margin: 0; }
 /* Reserve the same handle space in view and edit modes. */
-.ls-block table { margin-top: calc(1rem + 24px); }
+.ls-block table { margin-top: 28px; }
 .notes-table-editor table { width: 100%; table-layout: auto; }
 .notes-table-cell-frame { position: relative; display: block; }
 .notes-table-cell-mirror { visibility: hidden; white-space: pre-wrap; overflow-wrap: normal; }
@@ -51,3 +51,15 @@ table.notes-table-nowrap :is(th, td), .notes-table-nowrap .notes-table-cell-mirr
 .ls-block table tbody :is(tr, td) {
   background-color: transparent !important;
 }
+
+/* References have no editing controls and need no reserved handle space. */
+.references .ls-block table, .custom-query .ls-block table { margin-top: 1rem; }
+.notes-table-delete { cursor: pointer; border: 0; }
+.notes-table-delete:disabled { visibility: hidden; pointer-events: none; }
+/* Leave room for the bottom controls without changing cell dimensions. */
+.ls-block table { margin-bottom: 28px; }
+.references .ls-block table, .custom-query .ls-block table { margin-bottom: 1rem; }
+
+.notes-table-add-actions { display: flex; gap: 1rem; padding: 4px 0; }
+.notes-table-add-actions button { padding: 0; border: 0; background: transparent; color: var(--ls-link-text-color); font: inherit; cursor: pointer; }
+.notes-table-add-actions button:hover { text-decoration: underline; }

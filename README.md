@@ -105,8 +105,9 @@ Enter saves and Shift+Enter inserts a newline. Inputs overlay text-sized cells
 without adding intrinsic input width or control gutters. Drag the handles to the
 left of rows or above headers to reorder them; the insertion line previews the
 position and Escape cancels the drag. Handles appear on hover on desktop and
-remain visible on touch devices. Adding and deleting rows or columns is left to
-Logseq's Markdown editor.
+remain visible on touch devices. Crosses on the right delete rows; crosses below
+the table delete columns. The last row and column are kept. `Add row` appends an
+empty row; `Add column` appends a column named `Column`.
 
 Native and editable tables share a thin grid, a uniform body background and bold,
 centered headers using the theme's secondary background. Space above the table
