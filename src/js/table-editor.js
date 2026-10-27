@@ -60,7 +60,7 @@
     return [...parsed.lines.slice(0, parsed.indices[0]), ...rows,
       ...parsed.lines.slice(parsed.indices.at(-1) + 1)].join("\n");
   };
-  const addReordering = (editor, grid, save, state, widths) => {
+  const addTableControls = (editor, grid, save, state, widths) => {
     const overlay = document.createElement("div");
     overlay.className = "notes-table-drag-overlay";
     document.body.append(overlay);
@@ -75,10 +75,10 @@
     const position = () => {
       if (!editor.isConnected) return;
       const area = editor.getBoundingClientRect();
-      handles.forEach(({button, element, column}) => {
+      handles.forEach(({button, element, column, deletion}) => {
         const r = element.getBoundingClientRect();
-        const x = column ? r.left + r.width / 2 - 12 : area.left - 26;
-        const y = column ? r.top - 25 : r.top + r.height / 2 - 12;
+        const x = column ? r.left + r.width / 2 - 12 : deletion ? Math.min(grid.getBoundingClientRect().right, area.right) + 2 : area.left - 26;
+        const y = column ? deletion ? grid.getBoundingClientRect().bottom + 2 : r.top - 25 : r.top + r.height / 2 - 12;
         button.style.left = `${x}px`; button.style.top = `${y}px`;
         button.hidden = r.bottom < 0 || r.top > window.innerHeight ||
           (column && (x < area.left || x + 24 > area.right));
@@ -91,8 +91,8 @@
       if (event.pointerType === "touch") return;
       const area = editor.getBoundingClientRect();
       const header = grid.getBoundingClientRect();
-      const inside = event.clientX >= area.left - 30 && event.clientX <= area.right + 4 &&
-        event.clientY >= Math.min(area.top, header.top - 28) && event.clientY <= area.bottom + 4;
+      const inside = event.clientX >= area.left - 30 && event.clientX <= area.right + 30 &&
+        event.clientY >= Math.min(area.top, header.top - 28) && event.clientY <= Math.max(area.bottom, header.bottom + 30);
       overlay.classList.toggle("is-visible", !!drag || inside);
       if (inside || drag) position();
     };
@@ -162,6 +162,30 @@
       button.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); });
       handles.push({button, element, column}); overlay.append(button);
     };
+    const makeDelete = (element, index, column) => {
+      const button = document.createElement("button");
+      button.type = "button"; button.textContent = "×";
+      button.className = "notes-table-drag-handle notes-table-delete";
+      button.title = `Delete ${column ? "column" : "row"} ${index + 1}`;
+      button.setAttribute("aria-label", button.title);
+      button.disabled = column ? cells().length <= 1 : rows().length <= 1;
+      button.addEventListener("pointerdown", event => {
+        if (editor.contains(document.activeElement)) document.activeElement.blur();
+        event.stopPropagation();
+      });
+      button.addEventListener("click", event => {
+        event.preventDefault(); event.stopPropagation();
+        if (state.saving || drag || button.disabled) return;
+        void save(data => {
+          if (column && data[0].length > 1) {
+            data.forEach(row => row.splice(index, 1)); widths.splice(index, 1);
+          } else if (!column && data.length > 3) data.splice(index + 2, 1);
+        });
+      });
+      handles.push({button, element, column, deletion: true}); overlay.append(button);
+    };
+    cells().forEach((cell, i) => makeDelete(cell, i, true));
+    rows().forEach((row, i) => makeDelete(row, i, false));
     cells().forEach((cell, i) => makeHandle(cell, i, true));
     rows().forEach((row, i) => makeHandle(row, i, false));
     const escape = event => { if (event.key === "Escape") finish(true); };
@@ -189,7 +213,6 @@
     // redistribute columns when editing is enabled.
     const nativeCells = [...(table.querySelector("tr")?.children || [])];
     const widths = nativeCells.map((cell) => cell.getBoundingClientRect().width);
-    const totalWidth = widths.reduce((sum, width) => sum + width, 0);
     const editor = document.createElement("div");
     editor.className = "notes-table-editor";
     const status = document.createElement("span"); status.setAttribute("role", "status");
@@ -271,6 +294,7 @@
         });
         (rowIndex ? body : head).append(tr);
       });
+      const totalWidth = widths.reduce((sum, width) => sum + width, 0);
       if (totalWidth > 0 && widths.length === parsed.rows[0].length) {
         const columns = document.createElement("colgroup");
         widths.forEach((width) => {
@@ -284,9 +308,26 @@
         grid.append(columns);
       }
       grid.append(head, body);
-      editor.replaceChildren(grid, status);
+      const actions = document.createElement("div");
+      actions.className = "notes-table-add-actions";
+      const addAction = (label, change) => {
+        const button = document.createElement("button");
+        button.type = "button"; button.textContent = `+ ${label}`;
+        button.setAttribute("aria-label", label);
+        button.addEventListener("click", event => {
+          event.preventDefault(); event.stopPropagation();
+          if (!state.saving) void save(change);
+        }, { signal });
+        actions.append(button);
+      };
+      addAction("Add row", rows => rows.push(rows[0].map(() => "")));
+      addAction("Add column", rows => {
+        rows.forEach((row, index) => row.push(index === 0 ? "Column" : index === 1 ? "---" : ""));
+        widths.push(widths.length ? widths.reduce((sum, width) => sum + width, 0) / widths.length : 120);
+      });
+      editor.replaceChildren(grid, actions, status);
       wrapTable(table, { content: state.content }, editor);
-      state.cleanupDrag = addReordering(editor, grid, save, state, widths);
+      state.cleanupDrag = addTableControls(editor, grid, save, state, widths);
     };
     for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend", "click", "keydown", "keyup"])
       editor.addEventListener(type, (event) => event.stopPropagation(), { signal });
