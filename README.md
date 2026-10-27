@@ -61,7 +61,7 @@ block. Boolean properties have checkboxes; set them to `false` or remove them to
 | `searchable` | Page or block | Search page or nested blocks. |
 | `checklist` | Page or block | All / Unchecked / Checked filters for CHECK items. |
 | `table-wrap` | Table block | `true` fits the viewport and wraps text; `false` keeps content width with horizontal scrolling. Explicit line breaks remain in both modes. |
-| `table-editable` | Table block | Edit cells and add/delete rows, including on read-only pages or blocks. |
+| `table-editable` | Table block | Edit cells, add/delete and drag rows or columns, including on read-only pages or blocks. |
 | `auto-contents` | Page or block | Pages tree and search. |
 | `auto-favorites` | Page or block | Native Favorites in saved order. |
 | `auto-tags` | Page or block | Tag cloud. |
@@ -98,9 +98,17 @@ preserving compact columns such as dates whenever space permits.
 
 For tables, add `table-editable:: true` to the table's block. This explicitly
 overrides `read-only` for that table's controls; surrounding text stays locked. Cells wrap text and
-expand in height. Focus to edit; blur or Enter saves; Escape cancels. Add row and
-`−` add/delete rows. One rectangular Markdown table per block is supported;
-markup is shown as plain text. Conflicting edits require review and retry.
+expand in height. Focus to edit; blur or Enter saves; Escape cancels. Shift+Enter
+inserts a line break, stored as `<br>` in Markdown.
+
+Add row appends an empty row; Add column appends a column named `Column`.
+Drag the handles on the left or in headers to reorder rows or columns. Minus
+buttons on the right and below delete rows and columns; the last column is kept.
+Controls appear on hover or focus on desktop and stay visible on touch devices
+while editing. Side gutters remain reserved in view mode.
+
+One rectangular Markdown table per block is supported. Other markup is shown
+as plain text. Conflicting edits require review and retry.
 
 ## Catalogs
 
