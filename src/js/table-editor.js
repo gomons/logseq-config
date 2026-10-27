@@ -9,13 +9,25 @@
   const viewWidths = new Map();
   const nativeControls = new Map();
   const widthKey = (graph, uuid) => JSON.stringify([graph, uuid]);
+  const nativeLayouts = new Map();
   const applyViewWidths = (table, widths) => {
     let group = table.querySelector("colgroup.notes-view-widths");
     if (!widths) {
-      if (group) { group.remove(); table.style.tableLayout = ""; }
+      if (group) group.remove();
+      const original = nativeLayouts.get(table);
+      if (original) {
+        table.prepend(...original.groups);
+        table.style.tableLayout = original.layout;
+        nativeLayouts.delete(table);
+      }
       return;
     }
     if (!group) {
+      // Logseq already renders colgroups. Replace them temporarily, otherwise
+      // the extra columns prevent the native table from resizing.
+      const groups = [...table.children].filter(node => node.tagName === "COLGROUP");
+      nativeLayouts.set(table, {groups, layout: table.style.tableLayout || ""});
+      groups.forEach(node => node.remove());
       group = document.createElement("colgroup"); group.className = "notes-view-widths";
       table.prepend(group);
     }
@@ -503,6 +515,7 @@
     wrapped.clear();
     for (const [table, item] of nativeControls) { item.cleanup(); applyViewWidths(table, null); }
     nativeControls.clear(); viewWidths.clear();
+    for (const table of nativeLayouts.keys()) applyViewWidths(table, null);
     for (const [table, state] of states) remove(table, state);
   }, { once: true });
   void refresh();
