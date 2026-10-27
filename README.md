@@ -60,8 +60,8 @@ block. Boolean properties have checkboxes; set them to `false` or remove them to
 | `read-only` | Page or block | Prevent text editing, including descendants; child false does not override a lock. |
 | `searchable` | Page or block | Search page or nested blocks. |
 | `checklist` | Page or block | All / Unchecked / Checked filters for CHECK items. |
-| `table-wrap` | Table block | `true` fits the viewport and wraps text; `false` keeps content width with horizontal scrolling. Explicit line breaks remain in both modes. |
-| `table-editable` | Table block | Edit cells, add/delete and drag rows or columns, including on read-only pages or blocks. |
+| `table-wrap` | Table block | `true` or omitted keeps native Logseq layout; `false` keeps content width with horizontal scrolling. Explicit line breaks remain in both modes. |
+| `table-editable` | Table block | Edit existing cells, including multiline text, on read-only pages or blocks. |
 | `auto-contents` | Page or block | Pages tree and search. |
 | `auto-favorites` | Page or block | Native Favorites in saved order. |
 | `auto-tags` | Page or block | Tag cloud. |
@@ -90,22 +90,22 @@ Start a block with `CHECK` or `CHECKED` for interactive checkboxes with distinct
 styling from TODO tasks. `checklist-exclude` is used by a query in the notes graph;
 this repository does not implement that query.
 
-`table-wrap:: true/false` works independently of editing. Omit it to keep the
-existing layout (editable tables wrap by default). Column widths follow their text;
-short tables are not stretched. `false` uses the content width and one table scroller;
-`true` shrinks the widest columns first to fit the available width and wraps text,
-preserving compact columns such as dates whenever space permits.
+`table-wrap` works independently of editing. `true` and an omitted property keep
+Logseq's default table layout. Only `false` changes it: columns use content width
+without soft wrapping, and the whole table scrolls horizontally. Explicit line
+breaks remain in both modes.
 
 For tables, add `table-editable:: true` to the table's block. This explicitly
 overrides `read-only` for that table's controls; surrounding text stays locked. Cells wrap text and
 expand in height. Focus to edit; blur or Enter saves; Escape cancels. Shift+Enter
 inserts a line break, stored as `<br>` in Markdown.
 
-Add row appends an empty row; Add column appends a column named `Column`.
-Drag the handles on the left or in headers to reorder rows or columns. Minus
-buttons on the right and below delete rows and columns; the last column is kept.
-Controls appear on hover or focus on desktop and stay visible on touch devices
-while editing. Side gutters remain reserved in view mode.
+On touch devices, Enter inserts a newline; leaving the cell saves it. On desktop,
+Enter saves and Shift+Enter inserts a newline. Inputs overlay text-sized cells
+without adding intrinsic input width or control gutters. Adding, deleting and
+reordering rows or columns is left to Logseq's Markdown editor.
+Without `table-editable:: true`, the native table is used; only an explicit
+`table-wrap` setting changes its layout.
 
 One rectangular Markdown table per block is supported. Other markup is shown
 as plain text. Conflicting edits require review and retry.

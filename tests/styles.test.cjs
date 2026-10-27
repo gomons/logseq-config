@@ -33,7 +33,7 @@ assert.equal(
 );
 assert.equal(
   declarations(".notes-table-editor table")["table-layout"],
-  "fixed",
+  "auto",
 );
 
 assert.equal(declarations(".notes-check-controls").display, "inline-flex");
@@ -42,8 +42,9 @@ assert.equal(declarations(".notes-check-controls")["vertical-align"], "middle");
 assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["margin-top"], "0");
 assert.equal(declarations('.notes-check-controls > input[type="checkbox"]')["margin-bottom"], "0");
 
-assert.equal(declarations(".notes-table-wrap textarea, .notes-table-nowrap textarea")["overflow-x"], "hidden");
-assert.equal(declarations("table.notes-table-wrap, .notes-table-wrap table")["max-width"], "100%");
+assert.equal(declarations(".notes-table-editor textarea").position, "absolute");
+assert.equal(declarations(".notes-table-cell-mirror").visibility, "hidden");
+assert(!rules.some((rule) => rule.selector.includes("notes-table-wrap")), "Default wrapping has no custom rules");
 
 assert.equal(
   declarations('.notes-check-controls,\n.block-content :is(.todo, .done) > input[type="checkbox"]').top,
