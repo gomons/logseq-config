@@ -2,7 +2,7 @@
 .notes-table-source { display: none !important; }
 .notes-table-editor { overflow-x: auto; margin: 0; }
 .notes-table-editor table { width: 100%; table-layout: fixed; }
-.notes-table-editor th, .notes-table-editor td { position: relative; }
+.notes-table-editor th, .notes-table-editor td { position: relative; box-sizing: border-box; }
 .notes-table-editor button {
   padding: 0.3rem 0.5rem;
   min-height: 32px;
@@ -74,7 +74,8 @@ table.notes-table-wrap :is(th, td), table.notes-table-nowrap :is(th, td) {
 }
 
 /* A dedicated, always-reserved column separates actions from cell content. */
-.block-content table .notes-table-actions {
+.block-content table .notes-table-actions,
+.block-content table .notes-table-row-handle {
   width: 40px;
   min-width: 40px;
   padding: 0;
@@ -94,4 +95,65 @@ table.notes-table-wrap :is(th, td), table.notes-table-nowrap :is(th, td) {
 }
 @media (hover: none) {
   .notes-table-editor .notes-table-delete { opacity: 1; }
+}
+
+/* Drag starts only on a handle; cell editing and normal touch scrolling remain available. */
+.notes-table-editor .notes-table-grip {
+  position: absolute; padding: 0; min-height: 24px; width: 24px;
+  touch-action: none; user-select: none; cursor: grab; opacity: 0;
+  color: var(--ls-secondary-text-color);
+}
+.notes-table-editor .notes-table-grip-column { right: 4px; width: 16px; top: 50%; transform: translateY(-50%); }
+.notes-table-editor .notes-table-grip-row { position: static; width: 40px; min-height: 32px; }
+.notes-table-dragging, .notes-table-dragging .notes-table-grip { cursor: grabbing; }
+.notes-table-editor .notes-table-drop { outline: 2px solid var(--ls-link-text-color); outline-offset: -2px; }
+
+.notes-table-editor tr:hover .notes-table-grip-row,
+.notes-table-editor tr:focus-within .notes-table-grip-row,
+.notes-table-editor th:hover .notes-table-grip-column,
+.notes-table-editor th:focus-within .notes-table-grip-column,
+.notes-table-dragging .notes-table-grip { opacity: 0.6; }
+@media (hover: none) {
+  .notes-table-editor .notes-table-grip { opacity: 0.6; }
+}
+
+/* Reserve header handle space in both viewing and editing modes. */
+.block-content table.notes-table-layout th:not(.notes-table-actions):not(.notes-table-row-handle),
+.notes-table-editor th[data-column] { padding-right: 24px; }
+
+.notes-table-editor tfoot td { text-align: center; vertical-align: middle; padding: 4px 0; background: transparent; }
+
+.notes-table-editor tfoot button { opacity: 0; }
+.notes-table-editor tfoot td:hover button,
+.notes-table-editor tfoot td:focus-within button { opacity: 1; }
+@media (hover: none) {
+  .notes-table-editor tfoot button { opacity: 1; }
+}
+
+.notes-table-editor .notes-table-delete,
+.notes-table-editor tfoot button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  line-height: 1;
+  border: 1px solid var(--ls-border-color);
+  border-radius: 4px;
+  background: transparent;
+}
+
+.notes-table-editor tfoot td.notes-column-hover button,
+.notes-table-editor tfoot td.notes-column-focus button { opacity: 1; }
+
+/* Keep the delete controls outside the striped data area. */
+.block-content table .notes-table-actions,
+.notes-table-editor tfoot tr,
+.notes-table-editor tfoot td {
+  background-color: var(--ls-primary-background-color) !important;
 }
