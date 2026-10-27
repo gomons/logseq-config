@@ -3,7 +3,7 @@ const fs = require("fs"),
   assert = require("assert");
 const { parseHTML } = require("linkedom");
 const { window, document } = parseHTML(
-  '<html><body><div class="ls-block" blockid="b"><table><tr><td>Polish</td><td>Russian</td></tr></table></div></body></html>',
+  '<html><body><div class="ls-block" blockid="b"><table><colgroup><col><col></colgroup><tr><td>Polish</td><td>Russian</td></tr></table></div></body></html>',
 );
 document.querySelectorAll("td").forEach((cell, i) => {
   cell.getBoundingClientRect = () => ({width: [180, 420][i]});
@@ -49,7 +49,7 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   assert(document.querySelector(".notes-table-editor"));
   assert.equal(document.querySelectorAll(".notes-table-add-actions button").length, 2);
   assert.equal(inputs().length, 2);
-  assert.deepEqual([...document.querySelectorAll("col")].map(c => c.style.width), ["30%", "70%"]);
+  assert.deepEqual([...document.querySelectorAll(".notes-table-editor col")].map(c => c.style.width), ["30%", "70%"]);
   assert.equal(document.querySelector(".notes-table-editor table").style.tableLayout, "fixed");
   const [a,b] = inputs();
   a.value = "kot | pies"; blur(a);
@@ -154,6 +154,8 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   assert(document.querySelector('[aria-label="Delete column 2"]'));
   content = "table-editable:: true\ntable-wrap:: true\n| A | B | C |\n| --- | --- | --- |\n| a | b | c |";
   native.querySelector("tr").append(document.createElement("td"));
+  const originalGroup = native.querySelector("colgroup");
+  originalGroup.append(document.createElement("col"));
   native.querySelectorAll("td").forEach(cell => { cell.getBoundingClientRect = () => ({width:100}); });
   await poll();
   document.querySelectorAll(".notes-table-editor th").forEach((cell, i) => {
@@ -180,8 +182,13 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   assert(document.querySelector(".notes-table-resizer"), "Read-only view still allows resizing");
   assert(!document.querySelector('[aria-label="Delete row 1"]'));
   assert(Math.abs(parseFloat(native.querySelector("col").style.width)-130/3)<0.00001);
+  const viewResizer = document.querySelector(".notes-table-resizer");
+  pointer(viewResizer,"pointerdown",100,20); pointer(viewResizer,"pointermove",120,20); pointer(viewResizer,"pointerup",120,20);
+  assert.equal(native.querySelectorAll("col").length, 3);
+  assert(Math.abs(parseFloat(native.querySelector("col").style.width)-40)<0.00001, "Native colgroups must not prevent resizing");
+  assert.equal(writes.length, writeCount);
   content = content.replace("table-editable:: false", "table-editable:: true"); await poll();
-  assert(Math.abs(parseFloat(document.querySelector(".notes-table-editor col").style.width)-130/3)<0.00001,
+  assert(Math.abs(parseFloat(document.querySelector(".notes-table-editor col").style.width)-40)<0.00001,
     "Edit/View switches preserve temporary proportions");
   content = content.replace("table-wrap:: true","table-wrap:: false"); await poll();
   assert(!document.querySelector(".notes-table-resizer"));
@@ -189,4 +196,5 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   assert(!document.querySelector(".notes-table-editor"));
   assert(!document.querySelector(".notes-table-drag-overlay"));
   assert(!native.classList.contains("notes-table-wrap"));
+  assert.equal(native.querySelector("colgroup"), originalGroup, "Restore original Logseq columns on cleanup");
 })().catch((e) => { console.error(e); process.exitCode = 1; });

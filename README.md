@@ -174,3 +174,5 @@ Existing tags are never moved to a different commit.
 ## License
 
 [MIT](LICENSE) © 2026 Siarhei Homan.
+
+Use `/table` to insert an empty two-column table with one header row and one body row. The native slash command enables `table-editable` and `table-wrap`.
