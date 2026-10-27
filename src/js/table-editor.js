@@ -60,7 +60,128 @@
     return [...parsed.lines.slice(0, parsed.indices[0]), ...rows,
       ...parsed.lines.slice(parsed.indices.at(-1) + 1)].join("\n");
   };
+  const addReordering = (editor, grid, save, state, widths) => {
+    const overlay = document.createElement("div");
+    overlay.className = "notes-table-drag-overlay";
+    document.body.append(overlay);
+    const marker = document.createElement("div");
+    marker.className = "notes-table-drop-marker";
+    marker.hidden = true;
+    overlay.append(marker);
+    let drag = null;
+    const handles = [];
+    const cells = () => [...grid.querySelectorAll("thead th")];
+    const rows = () => [...grid.querySelectorAll("tbody tr")];
+    const position = () => {
+      if (!editor.isConnected) return;
+      const area = editor.getBoundingClientRect();
+      handles.forEach(({button, element, column}) => {
+        const r = element.getBoundingClientRect();
+        const x = column ? r.left + r.width / 2 - 12 : area.left - 26;
+        const y = column ? r.top - 25 : r.top + r.height / 2 - 12;
+        button.style.left = `${x}px`; button.style.top = `${y}px`;
+        button.hidden = r.bottom < 0 || r.top > window.innerHeight ||
+          (column && (x < area.left || x + 24 > area.right));
+      });
+    };
+    const show = () => { overlay.classList.add("is-visible"); position(); };
+    // Include the external handles and the gap leading to them, without
+    // placing an invisible element over nearby Logseq controls.
+    const trackHover = (event) => {
+      if (event.pointerType === "touch") return;
+      const area = editor.getBoundingClientRect();
+      const header = grid.getBoundingClientRect();
+      const inside = event.clientX >= area.left - 30 && event.clientX <= area.right + 4 &&
+        event.clientY >= Math.min(area.top, header.top - 28) && event.clientY <= area.bottom + 4;
+      overlay.classList.toggle("is-visible", !!drag || inside);
+      if (inside || drag) position();
+    };
+    const leaveWindow = () => { if (!drag) overlay.classList.remove("is-visible"); };
+    editor.addEventListener("pointerenter", show);
+    overlay.addEventListener("pointerenter", show);
+    document.addEventListener("pointermove", trackHover);
+    document.addEventListener("pointerleave", leaveWindow);
+    const finish = (cancel) => {
+      if (!drag) return;
+      const { column, from, slot, button, moved } = drag;
+      drag = null; state.dragging = false;
+      button.classList.remove("is-dragging"); marker.hidden = true;
+      if (cancel || !moved) return;
+      const to = slot > from ? slot - 1 : slot;
+      if (to === from) return;
+      void save((data) => {
+        const move = (items, offset = 0) => items.splice(to + offset, 0, items.splice(from + offset, 1)[0]);
+        if (column) { data.forEach(row => move(row)); move(widths); }
+        else move(data, 2);
+      });
+    };
+    const makeHandle = (element, from, column) => {
+      const button = document.createElement("button");
+      button.type = "button"; button.textContent = column ? "⋯" : "≡";
+      button.className = "notes-table-drag-handle";
+      button.title = `Move ${column ? "column" : "row"} ${from + 1}`;
+      button.setAttribute("aria-label", button.title);
+      button.addEventListener("pointerdown", event => {
+        if (event.button !== 0 || state.saving) return;
+        // Commit a focused textarea before queuing the reorder.
+        if (editor.contains(document.activeElement)) document.activeElement.blur();
+        event.preventDefault(); event.stopPropagation();
+        button.setPointerCapture?.(event.pointerId);
+        drag = {column, from, slot: from, button, x: event.clientX, y: event.clientY, moved: false};
+        state.dragging = true; show(); button.classList.add("is-dragging");
+      });
+      button.addEventListener("pointermove", event => {
+        if (!drag || drag.button !== button) return;
+        event.preventDefault();
+        if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5 && !drag.moved) return;
+        drag.moved = true;
+        const items = column ? cells() : rows();
+        const point = column ? event.clientX : event.clientY;
+        const rects = items.map(item => item.getBoundingClientRect());
+        let slot = rects.findIndex(r => point < (column ? r.left + r.width / 2 : r.top + r.height / 2));
+        if (slot < 0) slot = items.length;
+        drag.slot = slot;
+        const r = rects[Math.min(slot, rects.length - 1)];
+        const bounds = grid.getBoundingClientRect();
+        const edge = slot === items.length ? (column ? r.right : r.bottom) : (column ? r.left : r.top);
+        marker.hidden = false;
+        marker.style.left = `${column ? edge : bounds.left}px`;
+        marker.style.top = `${column ? bounds.top : edge}px`;
+        marker.style.width = `${column ? 2 : bounds.width}px`;
+        marker.style.height = `${column ? bounds.height : 2}px`;
+        if (column) {
+          const area = editor.getBoundingClientRect();
+          if (event.clientX > area.right - 24) editor.scrollLeft += 12;
+          else if (event.clientX < area.left + 24) editor.scrollLeft -= 12;
+        }
+        position();
+      });
+      button.addEventListener("pointerup", () => finish(false));
+      button.addEventListener("pointercancel", () => finish(true));
+      button.addEventListener("lostpointercapture", () => finish(true));
+      button.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); });
+      handles.push({button, element, column}); overlay.append(button);
+    };
+    cells().forEach((cell, i) => makeHandle(cell, i, true));
+    rows().forEach((row, i) => makeHandle(row, i, false));
+    const escape = event => { if (event.key === "Escape") finish(true); };
+    document.addEventListener("keydown", escape);
+    window.addEventListener("scroll", position, true);
+    window.addEventListener("resize", position);
+    const observer = window.ResizeObserver ? new window.ResizeObserver(position) : null;
+    observer?.observe(grid);
+    position();
+    return () => {
+      finish(true); overlay.remove(); observer?.disconnect();
+      editor.removeEventListener("pointerenter", show);
+      document.removeEventListener("pointermove", trackHover);
+      document.removeEventListener("pointerleave", leaveWindow);
+      document.removeEventListener("keydown", escape);
+      window.removeEventListener("scroll", position, true); window.removeEventListener("resize", position);
+    };
+  };
   const remove = (table, state) => {
+    state.cleanupDrag?.();
     state.editor.remove(); table.classList.remove("notes-table-source"); states.delete(table);
   };
   const mount = (table, block, graph) => {
@@ -106,6 +227,7 @@
       }
     };
     const draw = () => {
+      state.cleanupDrag?.();
       const parsed = parse(state.content);
       if (!parsed) { remove(table, state); return; }
       const grid = document.createElement("table");
@@ -164,6 +286,7 @@
       grid.append(head, body);
       editor.replaceChildren(grid, status);
       wrapTable(table, { content: state.content }, editor);
+      state.cleanupDrag = addReordering(editor, grid, save, state, widths);
     };
     for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend", "click", "keydown", "keyup"])
       editor.addEventListener(type, (event) => event.stopPropagation(), { signal });
@@ -190,7 +313,7 @@
         if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
         if (!table.isConnected) continue;
         const state = states.get(table);
-        if (state?.saving || state?.editor.contains(document.activeElement)) continue;
+        if (state?.saving || state?.dragging || state?.editor.contains(document.activeElement)) continue;
         wrapTable(table, block, state?.editor);
         if (!block || !truth(property(block, "table-editable")) || !parse(block.content)) {
           if (state) remove(table, state); continue;

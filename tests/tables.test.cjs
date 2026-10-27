@@ -102,7 +102,41 @@ const blur = (node) => node.dispatchEvent(new window.Event("blur"));
   await tick(); await tick();
   assert(!content.includes("must not overwrite"));
   assert(document.querySelector('[role="status"]').textContent.includes("changed elsewhere"));
+  // Reordering moves the separator/alignment with a column, and only body rows.
+  content = "table-editable:: true\n| A | B |\n| :--- | ---: |\n| first | one |\n| second | two |";
+  await poll();
+  const pointer = (button, type, x, y) => {
+    const event = new window.Event(type, {cancelable: true});
+    Object.assign(event, {button: 0, pointerId: 1, clientX: x, clientY: y});
+    button.dispatchEvent(event);
+  };
+  document.querySelectorAll(".notes-table-editor th").forEach((cell, i) => {
+    cell.getBoundingClientRect = () => ({left:i*100, right:(i+1)*100, top:0, bottom:40, width:100,height:40});
+  });
+  const editor = document.querySelector(".notes-table-editor");
+  editor.getBoundingClientRect = () => ({left:100,right:300,top:100,bottom:300});
+  const overlay = document.querySelector(".notes-table-drag-overlay");
+  pointer(document, "pointermove", 85, 160);
+  assert(overlay.classList.contains("is-visible"), "External handle gutter stays visible");
+  pointer(document, "pointermove", 50, 160);
+  assert(!overlay.classList.contains("is-visible"), "Leaving the whole region hides handles");
+  let handle = document.querySelector('[aria-label="Move column 1"]');
+  pointer(handle, "pointerdown", 50, 0); pointer(handle, "pointermove", 190, 0); pointer(handle, "pointerup", 190, 0);
+  await tick(); await tick();
+  assert(content.includes("| B | A |\n| ---: | :--- |\n| one | first |"));
+  document.querySelectorAll(".notes-table-editor tbody tr").forEach((row, i) => {
+    row.getBoundingClientRect = () => ({left:0,right:200,top:40+i*40,bottom:80+i*40,width:200,height:40});
+  });
+  handle = document.querySelector('[aria-label="Move row 1"]');
+  pointer(handle,"pointerdown",0,60); pointer(handle,"pointermove",0,119); pointer(handle,"pointerup",0,119);
+  await tick(); await tick();
+  assert(content.includes("| two | second |\n| one | first |"));
+  const beforeCancel = content;
+  handle = document.querySelector('[aria-label="Move row 1"]');
+  pointer(handle,"pointerdown",0,60); pointer(handle,"pointermove",0,119); pointer(handle,"pointercancel",0,119);
+  await tick(); assert.equal(content,beforeCancel);
   window.notesTableEditor.abort();
   assert(!document.querySelector(".notes-table-editor"));
+  assert(!document.querySelector(".notes-table-drag-overlay"));
   assert(!native.classList.contains("notes-table-wrap"));
 })().catch((e) => { console.error(e); process.exitCode = 1; });

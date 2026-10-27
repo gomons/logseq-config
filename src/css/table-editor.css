@@ -1,6 +1,8 @@
 /* Text mirrors size cells; overlaid inputs do not participate in table layout. */
 .notes-table-source { display: none !important; }
 .notes-table-editor { overflow-x: auto; margin: 0; }
+/* Reserve the same handle space in view and edit modes. */
+.ls-block table { margin-top: calc(1rem + 24px); }
 .notes-table-editor table { width: 100%; table-layout: auto; }
 .notes-table-cell-frame { position: relative; display: block; }
 .notes-table-cell-mirror { visibility: hidden; white-space: pre-wrap; overflow-wrap: normal; }
@@ -19,3 +21,33 @@
 table.notes-table-nowrap, .notes-table-nowrap table { width: max-content; max-width: none; table-layout: auto; }
 table.notes-table-nowrap :is(th, td), .notes-table-nowrap .notes-table-cell-mirror,
 .notes-table-nowrap textarea { white-space: pre; overflow-wrap: normal; word-break: normal; }
+
+/* Fixed overlays leave native cell widths and table geometry untouched. */
+.notes-table-drag-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+.notes-table-drag-handle { position: fixed; width: 24px; height: 24px; padding: 0; margin: 0; border: 0; border-radius: 4px; background: var(--ls-primary-background-color); color: var(--ls-secondary-text-color); font: 18px/24px sans-serif; text-align: center; cursor: grab; touch-action: none; pointer-events: auto; opacity: 0; }
+.notes-table-drag-overlay.is-visible .notes-table-drag-handle,
+.notes-table-drag-handle:focus-visible { opacity: 0.75; }
+.notes-table-drag-handle:hover, .notes-table-drag-handle.is-dragging { opacity: 1; background: var(--ls-secondary-background-color); }
+.notes-table-drag-handle.is-dragging { cursor: grabbing; }
+.notes-table-drop-marker { position: fixed; background: var(--ls-link-text-color); pointer-events: none; }
+@media (hover: none), (pointer: coarse) { .notes-table-drag-handle { opacity: 0.75; } }
+
+/* Uniform grid in both native and editable tables. */
+.ls-block table {
+  border-collapse: collapse;
+  border: 1px solid var(--ls-border-color);
+}
+.ls-block table :is(th, td) {
+  border: 1px solid var(--ls-border-color) !important;
+}
+
+.ls-block table th {
+  text-align: center !important;
+  font-weight: 700;
+  background-color: var(--ls-secondary-background-color) !important;
+}
+
+/* Keep body rows uniform; the header uses the theme’s secondary background. */
+.ls-block table tbody :is(tr, td) {
+  background-color: transparent !important;
+}
