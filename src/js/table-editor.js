@@ -6,6 +6,25 @@
   const { signal } = controller;
   const states = new Map();
   const wrapped = new Set();
+  const viewWidths = new Map();
+  const nativeControls = new Map();
+  const widthKey = (graph, uuid) => JSON.stringify([graph, uuid]);
+  const applyViewWidths = (table, widths) => {
+    let group = table.querySelector("colgroup.notes-view-widths");
+    if (!widths) {
+      if (group) { group.remove(); table.style.tableLayout = ""; }
+      return;
+    }
+    if (!group) {
+      group = document.createElement("colgroup"); group.className = "notes-view-widths";
+      table.prepend(group);
+    }
+    const total = widths.reduce((sum, width) => sum + width, 0);
+    group.replaceChildren(...widths.map(width => {
+      const col = document.createElement("col"); col.style.width = `${100 * width / total}%`; return col;
+    }));
+    table.style.tableLayout = "fixed";
+  };
   const wrapTable = (table, block, editor) => {
     const value = property(block, "table-wrap");
     const mode = value == null ? null : truth(value);
@@ -60,7 +79,7 @@
     return [...parsed.lines.slice(0, parsed.indices[0]), ...rows,
       ...parsed.lines.slice(parsed.indices.at(-1) + 1)].join("\n");
   };
-  const addTableControls = (editor, grid, save, state, widths) => {
+  const addTableControls = (editor, grid, save, state, widths, viewOnly = false) => {
     const overlay = document.createElement("div");
     overlay.className = "notes-table-drag-overlay";
     document.body.append(overlay);
@@ -70,7 +89,7 @@
     overlay.append(marker);
     let drag = null;
     const handles = [];
-    const cells = () => [...grid.querySelectorAll("thead th")];
+    const cells = () => [...(grid.querySelector("tr")?.children || [])];
     const rows = () => [...grid.querySelectorAll("tbody tr")];
     const position = () => {
       if (!editor.isConnected) return;
@@ -93,10 +112,10 @@
       const header = grid.getBoundingClientRect();
       const inside = event.clientX >= area.left - 30 && event.clientX <= area.right + 30 &&
         event.clientY >= Math.min(area.top, header.top - 28) && event.clientY <= Math.max(area.bottom, header.bottom + 30);
-      overlay.classList.toggle("is-visible", !!drag || inside);
+      overlay.classList.toggle("is-visible", !!drag || state.dragging || inside);
       if (inside || drag) position();
     };
-    const leaveWindow = () => { if (!drag) overlay.classList.remove("is-visible"); };
+    const leaveWindow = () => { if (!drag && !state.dragging) overlay.classList.remove("is-visible"); };
     editor.addEventListener("pointerenter", show);
     overlay.addEventListener("pointerenter", show);
     document.addEventListener("pointermove", trackHover);
@@ -184,11 +203,86 @@
       });
       handles.push({button, element, column, deletion: true}); overlay.append(button);
     };
+    if (!viewOnly) {
     cells().forEach((cell, i) => makeDelete(cell, i, true));
     rows().forEach((row, i) => makeDelete(row, i, false));
     cells().forEach((cell, i) => makeHandle(cell, i, true));
     rows().forEach((row, i) => makeHandle(row, i, false));
-    const escape = event => { if (event.key === "Escape") finish(true); };
+    }
+    // Temporary adjacent-column resizing: no block properties or API writes.
+    let resizing = null;
+    const resizers = [];
+    const positionResizers = () => {
+      const area = editor.getBoundingClientRect();
+      const headers = cells();
+      resizers.forEach((button, index) => {
+        const rect = headers[index].getBoundingClientRect();
+        button.style.left = `${rect.right - 5}px`;
+        button.style.top = `${rect.top}px`;
+        button.style.height = `${rect.height}px`;
+        button.hidden = rect.right < area.left || rect.right > area.right ||
+          rect.bottom < 0 || rect.top > window.innerHeight;
+      });
+    };
+    const endResize = cancel => {
+      if (!resizing) return;
+      const current = resizing;
+      resizing = null; state.dragging = false;
+      current.button.classList.remove("is-resizing");
+      if (cancel) {
+        current.cols.forEach((col, i) => { col.style.width = current.styles[i]; });
+      } else if (current.moved) {
+        widths.splice(0, widths.length, ...current.sizes);
+        viewWidths.set(widthKey(state.graph, state.uuid), [...widths]);
+      }
+      position(); positionResizers();
+    };
+    if (truth(property({ content: state.content }, "table-wrap"))) {
+      cells().slice(0, -1).forEach((cell, index) => {
+        const button = document.createElement("button");
+        button.type = "button"; button.className = "notes-table-resizer";
+        button.title = `Resize columns ${index + 1} and ${index + 2}`;
+        button.setAttribute("aria-label", button.title);
+        button.addEventListener("pointerdown", event => {
+          if (event.button !== 0 || state.saving || drag) return;
+          if (editor.contains(document.activeElement)) document.activeElement.blur();
+          const sizes = cells().map(item => item.getBoundingClientRect().width);
+          if (viewOnly && sizes.every(size => size > 0)) applyViewWidths(grid, sizes);
+          const cols = [...grid.querySelectorAll("col")];
+          if (cols.length !== sizes.length || sizes.some(size => size <= 0)) return;
+          event.preventDefault(); event.stopPropagation();
+          button.setPointerCapture?.(event.pointerId);
+          resizing = {button, cols, sizes, styles: cols.map(col => col.style.width),
+            x: event.clientX, left: sizes[index], right: sizes[index + 1], index, moved: false};
+          state.dragging = true; button.classList.add("is-resizing"); show();
+        });
+        button.addEventListener("pointermove", event => {
+          if (!resizing || resizing.button !== button) return;
+          event.preventDefault(); event.stopPropagation();
+          const current = resizing;
+          const pair = current.left + current.right;
+          const minimum = Math.min(48, pair / 2);
+          const left = Math.max(minimum, Math.min(pair - minimum, current.left + event.clientX - current.x));
+          current.sizes[index] = left; current.sizes[index + 1] = pair - left;
+          const total = current.sizes.reduce((sum, size) => sum + size, 0);
+          // Set the initial measured proportions for all columns, changing only this pair.
+          current.cols.forEach((col, i) => { col.style.width = `${100 * current.sizes[i] / total}%`; });
+          current.moved = true;
+          position(); positionResizers();
+        });
+        button.addEventListener("pointerup", () => endResize(false));
+        button.addEventListener("pointercancel", () => endResize(true));
+        button.addEventListener("lostpointercapture", () => endResize(true));
+        button.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); });
+        resizers.push(button); overlay.append(button);
+      });
+    }
+    window.addEventListener("scroll", positionResizers, true);
+    window.addEventListener("resize", positionResizers);
+    const resizeObserver = window.ResizeObserver ? new window.ResizeObserver(positionResizers) : null;
+    resizeObserver?.observe(grid);
+    positionResizers();
+    const escape = event => { if (event.key === "Escape") { finish(true); endResize(true); } };
     document.addEventListener("keydown", escape);
     window.addEventListener("scroll", position, true);
     window.addEventListener("resize", position);
@@ -196,7 +290,10 @@
     observer?.observe(grid);
     position();
     return () => {
-      finish(true); overlay.remove(); observer?.disconnect();
+      finish(true); endResize(true); overlay.remove(); observer?.disconnect();
+      resizeObserver?.disconnect();
+      window.removeEventListener("scroll", positionResizers, true);
+      window.removeEventListener("resize", positionResizers);
       editor.removeEventListener("pointerenter", show);
       document.removeEventListener("pointermove", trackHover);
       document.removeEventListener("pointerleave", leaveWindow);
@@ -212,7 +309,11 @@
     // Capture the native layout before hiding it; textarea content must not
     // redistribute columns when editing is enabled.
     const nativeCells = [...(table.querySelector("tr")?.children || [])];
-    const widths = nativeCells.map((cell) => cell.getBoundingClientRect().width);
+    const remembered = viewWidths.get(widthKey(graph, block.uuid));
+    const measured = nativeCells.map((cell) => cell.getBoundingClientRect().width);
+    const sum = measured.reduce((a, b) => a + b, 0);
+    const widths = remembered?.length === measured.length
+      ? remembered.map(width => width * sum / remembered.reduce((a, b) => a + b, 0)) : measured;
     const editor = document.createElement("div");
     editor.className = "notes-table-editor";
     const status = document.createElement("span"); status.setAttribute("role", "status");
@@ -237,6 +338,8 @@
         const parsed = parse(latest.content);
         if (!parsed) throw Error("This table format is not supported.");
         change(parsed.rows);
+        if (viewWidths.has(widthKey(graph, state.uuid)))
+          viewWidths.set(widthKey(graph, state.uuid), [...widths]);
         const content = serialize(parsed);
         const current = await api.get_block(state.uuid);
         if (signal.aborted || !sameGraph()) return;
@@ -342,6 +445,11 @@
       if (!api?.get_block) return;
       const graph = api.get_state_from_store?.("git/current-repo");
       for (const table of wrapped) if (!table.isConnected) wrapped.delete(table);
+      for (const [table, item] of nativeControls) {
+        if (!table.isConnected || item.state.graph !== graph) {
+          item.cleanup(); applyViewWidths(table, null); nativeControls.delete(table);
+        }
+      }
       for (const [table, state] of states) {
         if (!table.isConnected || state.graph !== graph
           || !state.editor.isConnected) remove(table, state);
@@ -353,11 +461,28 @@
         const block = await api.get_block(host.getAttribute("blockid"));
         if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
         if (!table.isConnected) continue;
+        const native = nativeControls.get(table);
+        if (native?.state.dragging) continue;
+        if (native && (native.state.content !== block?.content || truth(property(block, "table-editable")))) {
+          native.cleanup(); nativeControls.delete(table);
+        }
         const state = states.get(table);
         if (state?.saving || state?.dragging || state?.editor.contains(document.activeElement)) continue;
         wrapTable(table, block, state?.editor);
         if (!block || !truth(property(block, "table-editable")) || !parse(block.content)) {
-          if (state) remove(table, state); continue;
+          if (state) remove(table, state);
+          const saved = viewWidths.get(widthKey(graph, block?.uuid));
+          const count = table.querySelector("tr")?.children.length;
+          if (!nativeControls.has(table)) {
+            applyViewWidths(table, truth(property(block, "table-wrap")) && saved?.length === count ? saved : null);
+            if (block && truth(property(block, "table-wrap")) && parse(block.content)) {
+              const nativeState = {content: block.content, graph, uuid: block.uuid};
+              const sizes = [...table.querySelector("tr").children].map(cell => cell.getBoundingClientRect().width);
+              nativeControls.set(table, { state: nativeState,
+                cleanup: addTableControls(table.parentElement, table, null, nativeState, sizes, true) });
+            }
+          }
+          continue;
         }
         if (state && state.content !== block.content) remove(table, state);
         if (!states.has(table)) mount(table, block, graph);
@@ -376,6 +501,8 @@
       table.querySelectorAll("th, td").forEach((cell) => { cell.style.width = ""; });
     }
     wrapped.clear();
+    for (const [table, item] of nativeControls) { item.cleanup(); applyViewWidths(table, null); }
+    nativeControls.clear(); viewWidths.clear();
     for (const [table, state] of states) remove(table, state);
   }, { once: true });
   void refresh();
