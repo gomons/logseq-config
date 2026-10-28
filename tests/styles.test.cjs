@@ -17,7 +17,7 @@ const declarations = (selector) => {
   return result;
 };
 assert.equal(declarations(".notes-table-source").display, "none");
-assert.equal(declarations(".notes-table-editor")["overflow-x"], "auto");
+assert.equal(declarations(".notes-table-scroll")["overflow-x"], "auto");
 assert(declarations(".notes-table-editor textarea:focus")["outline"]);
 assert(
   declarations('.notes-check-controls > input[type="checkbox"]:checked')[
