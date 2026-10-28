@@ -440,9 +440,12 @@
         rows.forEach((row, index) => row.push(index === 0 ? "Column" : index === 1 ? "---" : ""));
         widths.push(widths.length ? widths.reduce((sum, width) => sum + width, 0) / widths.length : 120);
       });
-      editor.replaceChildren(grid, actions, status);
+      const scroller = document.createElement("div");
+      scroller.className = "notes-table-scroll";
+      scroller.append(grid);
+      editor.replaceChildren(scroller, actions, status);
       wrapTable(table, { content: state.content }, editor);
-      state.cleanupDrag = addTableControls(editor, grid, save, state, widths);
+      state.cleanupDrag = addTableControls(scroller, grid, save, state, widths);
     };
     for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend", "click", "keydown", "keyup"])
       editor.addEventListener(type, (event) => event.stopPropagation(), { signal });

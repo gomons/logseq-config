@@ -1,6 +1,9 @@
 /* Text mirrors size cells; overlaid inputs do not participate in table layout. */
 .notes-table-source { display: none !important; }
-.notes-table-editor { overflow-x: auto; margin: 0; }
+.notes-table-editor { margin: 0; min-width: 0; }
+.notes-table-scroll { overflow-x: auto; min-width: 0; }
+/* Keep external row controls inside the page beside horizontally scrolling tables. */
+.notes-table-editor.notes-table-nowrap { padding-right: 28px; box-sizing: border-box; }
 /* Reserve the same handle space in view and edit modes. */
 .ls-block table { margin-top: 28px; }
 .notes-table-editor table { width: 100%; table-layout: auto; }
