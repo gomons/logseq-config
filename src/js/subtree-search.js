@@ -76,8 +76,8 @@ window.notesSubtreeSearch = new AbortController();
       let count = 0;
       const visit = (node, parents, inherited, settings) => {
         settings = {
-          search: window.notesBooleanProperty(node, "searchable") ?? settings.search,
-          checklist: window.notesBooleanProperty(node, "checklist") ?? settings.checklist,
+          search: window.notesBooleanProperty(node, "search-show") ?? settings.search,
+          checklist: window.notesBooleanProperty(node, "checklist-show") ?? settings.checklist,
         };
         const content = String(node.content || "").replace(
           /^\s*[\w-]+::.*$/gm,
@@ -132,7 +132,7 @@ window.notesSubtreeSearch = new AbortController();
     }
     try {
       const rows = await api().datascript_query(
-        "[:find (pull ?b [:block/uuid :block/properties :block/pre-block? {:block/page [:block/name]}]) :where [?b :block/properties ?props] (or [(get ?props :searchable)] [(get ?props :checklist)])]",
+        "[:find (pull ?b [:block/uuid :block/properties :block/pre-block? {:block/page [:block/name]}]) :where [?b :block/properties ?props] (or [(get ?props :search-show)] [(get ?props :checklist-show)])]",
       );
       if (signal.aborted) return;
       const enabled = new Map();
@@ -140,10 +140,10 @@ window.notesSubtreeSearch = new AbortController();
       for (const [block] of rows || []) {
         const uuid = block.uuid || block["block/uuid"];
         const full = await api().get_block?.(uuid) || block;
-        const properties = await window.notesInheritedProperties(full, ["searchable", "checklist"]);
+        const properties = await window.notesInheritedProperties(full, ["search-show", "checklist-show"]);
         const preBlock = block.preBlock ?? block["pre-block?"] ?? block["block/pre-block?"];
         const page = block.page || block["block/page"];
-        const options = { search: isTrue(properties.searchable), checklist: isTrue(properties.checklist),
+        const options = { search: isTrue(properties["search-show"]), checklist: isTrue(properties["checklist-show"]),
           pageName: preBlock ? page?.name || page?.["block/name"] : null };
         if (options.search || options.checklist)
           enabled.set(block.uuid || block["block/uuid"], options);

@@ -1,9 +1,9 @@
 const fs = require('fs'), vm = require('vm'), assert = require('node:assert/strict');
 const {parseHTML} = require('linkedom');
-const root = {uuid:'root', content:'checklist:: true', properties:{checklist:true}, children:[
+const root = {uuid:'root', content:'checklist-show:: true', properties:{"checklist-show":true}, children:[
  {uuid:'parent', content:'Heading', children:[{uuid:'hit',content:'check task',children:[
   {uuid:'detail',content:'Explanation'}, {uuid:'wrong',content:'cHeCkEd other',children:[{uuid:'wrong-detail',content:'Other explanation'}]}
- ]}]}, {uuid:'off',content:'checklist:: false\nAlways visible'}, {uuid:'plain',content:'Unrelated text'}
+ ]}]}, {uuid:'off',content:'checklist-show:: false\nAlways visible'}, {uuid:'plain',content:'Unrelated text'}
 ]};
 const render = n => `<div class="ls-block" blockid="${n.uuid}"><div class="block-content">${n.content}</div>${(n.children||[]).map(render).join('')}</div>`;
 const {window,document} = parseHTML(`<html><body>${render(root)}</body></html>`);

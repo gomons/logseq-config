@@ -1,4 +1,4 @@
-/* Reusable searchable:: true block control. */
+/* Reusable search-show:: true block control. */
 .notes-subtree-search span {
   font-size: 0.85em;
   color: var(--ls-secondary-text-color);

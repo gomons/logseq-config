@@ -1,5 +1,5 @@
 const fs = require('fs'), vm = require('vm'), assert = require('node:assert/strict');
-const keys = ['read-only', 'searchable', 'checklist', 'table-wrap', 'table-editable'];
+const keys = ['read-only', 'search-show', 'checklist-show', 'table-wrap', 'table-editable'];
 const props = value => Object.fromEntries(keys.map(key => [key, value]));
 const page = {name: 'page', properties: props(true)};
 const leaf = {uuid: 'leaf', page: {id: 1}};
