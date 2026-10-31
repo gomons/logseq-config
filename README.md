@@ -42,7 +42,7 @@ Device type is independent of window width. Reload after changing config.
   Subpages and Tagged pages match names and aliases; Linked References matches
   rendered text. `+` beside Subpages creates a child using only its name and
   preserves the parent's original spelling, even on an empty parent page.
-- Pages lists file-backed pages by namespace, with collapsed branches. It excludes
+- Contents lists file-backed pages by namespace, with collapsed branches. It excludes
   journals, implicit pages without files, service directories and root AGENTS/README.
   Search matches leaf names and aliases, showing full clickable paths without
   alias captions. Refresh preserves tree folds; reload resets them.
@@ -67,11 +67,11 @@ control which filters apply within those panels.
 | `checklist` | Page or block | All / Unchecked / Checked filters for CHECK items. |
 | `table-wrap` | Table block | `true` or omitted keeps native Logseq layout; `false` keeps content width with horizontal scrolling. Explicit line breaks remain in both modes. |
 | `table-editable` | Table block | Edit existing cells, including multiline text, on read-only pages or blocks. |
-| `auto-contents` | Page or block | Pages tree and search. |
-| `auto-favorites` | Page or block | Native Favorites in saved order. |
-| `auto-tags` | Page or block | Tag cloud. |
-| `contents-pin` | Page | Promote to the top of Pages without duplication; full clickable path and one separator. |
-| `contents-exclude` | Page | Hide from Pages and search; children stay under the nearest visible ancestor. |
+| `contents-show` | Page or block | Contents tree and search. |
+| `favorites-show` | Page or block | Native Favorites in saved order. |
+| `tags-show` | Page or block | Tag cloud. |
+| `contents-pin` | Page | Promote to the top of Contents without duplication; full clickable path and one separator. |
+| `contents-exclude` | Page | Hide from Contents and search; children stay under the nearest visible ancestor. |
 
 Reading mode preserves navigation, folding, selection, checkboxes and property
 controls. Built-in `tags`, `alias` and `aliases` have add/remove controls.
@@ -81,14 +81,14 @@ commas in `[[…]]` so Logseq treats them as one value.
 For a Contents page, use:
 
 ```text
-auto-favorites:: true
-auto-contents:: true
-auto-tags:: true
+favorites-show:: true
+contents-show:: true
+tags-show:: true
 contents-exclude:: true
 ```
 
 These sections start expanded and can also be used independently on other blocks.
-Tagged pages is hidden where the Pages tree is displayed. Favorites are unaffected
+Tagged pages is hidden where the Contents tree is displayed. Favorites are unaffected
 by `contents-exclude`.
 
 Start a block with `CHECK` or `CHECKED` (case-insensitive) for interactive checkboxes with distinct

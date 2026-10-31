@@ -63,7 +63,7 @@ window.logseq = {
     get_state_from_store: () => "g",
     datascript_query: async (q) =>
       q.includes(":block/uuid")
-        ? [[{ uuid: "auto", content: "auto-contents:: true" }]]
+        ? [[{ uuid: "auto", content: "contents-show:: true" }]]
         : pages(),
   },
 };

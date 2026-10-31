@@ -84,8 +84,8 @@
   };
   const blockQuery = `[:find (pull ?block [:block/uuid :block/content :block/properties])
                       :where [?block :block/properties ?props]
-                      (or [(get ?props :auto-contents)] [(get ?props :auto-tags)]
-                          [(get ?props :auto-favorites)])]`;
+                      (or [(get ?props :contents-show)] [(get ?props :tags-show)]
+                          [(get ?props :favorites-show)])]`;
   const remove = (anchor) => {
     states.get(anchor)?.section.remove();
     states.delete(anchor);
@@ -207,8 +207,8 @@
       const blockRows = await api.datascript_query(blockQuery);
       const candidates = (blockRows || []).map(([block]) => ({
         uuid: field(block, "uuid"),
-        options: { pages: option(block, "auto-contents"), tags: option(block, "auto-tags"),
-          favorites: option(block, "auto-favorites") },
+        options: { pages: option(block, "contents-show"), tags: option(block, "tags-show"),
+          favorites: option(block, "favorites-show") },
       })).filter(({ options }) => options.pages || options.tags || options.favorites);
       const tags = candidates.some(({ options }) => options.tags)
         ? countTags(await api.datascript_query(tagQuery)) : [];
@@ -246,7 +246,7 @@
           let groupIndex = 0;
           for (const [key, label, signature] of [
             ["favorites", "Favorites", favoriteSignature],
-            ["pages", "Pages", treeSignature], ["tags", "Tags", tagSignature],
+            ["pages", "Contents", treeSignature], ["tags", "Tags", tagSignature],
           ]) {
             let group = state.groups.get(key);
             if (!options[key]) {

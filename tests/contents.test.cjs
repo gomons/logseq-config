@@ -14,7 +14,7 @@ const page = (name, parent, tags = [], properties = {}) => ({
   "block/properties": properties,
 });
 let pages = [
-  page("contents", null, [], { "auto-contents": true, "auto-tags": true }),
+  page("contents", null, [], { "contents-show": true, "tags-show": true }),
   page("life", null, ["contents"]),
   page("life/diary", "life"),
   page("life/diary/2026", "life/diary"),
@@ -22,7 +22,7 @@ let pages = [
 ];
 let first = {
   uuid: "properties",
-  content: "read-only:: true\nauto-contents:: true\nauto-tags:: true",
+  content: "read-only:: true\ncontents-show:: true\ntags-show:: true",
 };
 window.logseq = {
   api: {
@@ -63,7 +63,7 @@ window.logseq = {
 };
 let favoriteNames = ["life/diary", "unrelated"];
 window.logseq.api.get_current_graph_favorites = async () => favoriteNames;
-first.content += "\nauto-favorites:: true";
+first.content += "\nfavorites-show:: true";
 let poll;
 class Observer {
   constructor(cb) {}
