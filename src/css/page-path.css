@@ -114,3 +114,31 @@
   }
 }
 
+
+/* Shared in-content navigation for pages and focused blocks. */
+#main-content-container .notes-header-path,
+#main-content-container .notes-block-path {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ls-secondary-text-color);
+  margin: 0 0 1.25rem;
+  padding: 0;
+  min-height: 1.5em;
+  white-space: normal;
+  flex-wrap: wrap;
+}
+.notes-header-path + .ls-page-title { margin-top: 0; }
+.notes-block-path a { color: inherit; }
+.notes-block-page-path { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.notes-block-path-source { display: none !important; }
+
+/* Native page headings share a horizontal flex row with page actions. */
+#main-content-container :has(> .notes-header-path) {
+  flex-wrap: wrap;
+}
+#main-content-container .notes-header-path {
+  flex: 0 0 100%;
+  width: 100%;
+  order: -1;
+  box-sizing: border-box;
+}

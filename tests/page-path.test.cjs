@@ -1,0 +1,17 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const {parseHTML}=require('linkedom');
+const {window,document}=parseHTML('<html><body><div id="head"></div><main id="main-content-container"><div class="ls-page-title"><h1><span class="title" data-ref="test/test2/test3">Test/Test2/Test3</span></h1></div><div class="breadcrumb block-parents"><a data-ref="test/test2/test3">Test/Test2/Test3</a><span> › </span><a href="#/page/uuid1">one</a><span> › </span><a href="#/page/uuid2">two</a></div></main></body></html>');
+let poll;
+vm.runInNewContext(fs.readFileSync('src/js/page-path.js','utf8'),{window,document,AbortController,setInterval:fn=>(poll=fn,1),clearInterval(){},cancelAnimationFrame(){}});
+const path=document.querySelector('.notes-header-path');
+assert(path.nextElementSibling.matches('.ls-page-title'));
+assert(!document.querySelector('#head nav'));
+assert.equal(document.querySelectorAll('.notes-block-page-path a').length,3);
+assert.equal(document.querySelectorAll('.notes-block-page-path a')[1].getAttribute('href'),'#/page/test%2Ftest2');
+const html=document.body.innerHTML;
+for(let i=0;i<100;i++)poll();
+assert.equal(document.body.innerHTML,html,'Repeated refresh must not mutate stable breadcrumbs');
+assert.equal(document.querySelector('a[href="#/page/uuid2"]').textContent,'two');
+window.notesPageHeadings.abort();
+assert(!document.querySelector('.notes-block-path-source'));
+console.log('Page placement, block namespace links, native block links, stable refresh and cleanup passed');

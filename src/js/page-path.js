@@ -1,4 +1,4 @@
-/* Show leaf page titles and clickable parent namespaces beside Contents. */
+/* In-content page and block breadcrumbs. Bounded refresh avoids observer feedback. */
 (() => {
   window.notesPageHeadings?.abort();
   const controller = new AbortController();
@@ -8,7 +8,7 @@
   let frame = null;
   const render = () => {
     frame = null;
-    observer.disconnect();
+
     document.querySelectorAll(selector).forEach((heading) => {
       const original = heading.querySelector(".title[data-ref]");
       const previous = heading.querySelector(".notes-namespace-title");
@@ -37,10 +37,8 @@
       heading.classList.add("notes-has-namespace-title");
     });
     updateParentPath();
-    if (!signal.aborted) observer.observe(document.body, {
-      childList: true, subtree: true, characterData: true,
-      attributes: true, attributeFilter: ["data-ref"],
-    });
+    updateBlockPaths();
+
   };
   const createPathLink = (parts, names, index) => {
     const link = document.createElement("a");
@@ -80,7 +78,7 @@
     return disclosure;
   };
   const updateParentPath = () => {
-    const toolbar = document.querySelector(".notes-toolbar-navigation");
+    const toolbar = document.querySelector("#main-content-container .ls-page-title");
     const source = document.querySelector("#main-content-container .ls-page-title .title[data-ref]");
     const path = source?.getAttribute("data-ref") || "";
     const old = document.querySelector(".notes-header-path");
@@ -90,7 +88,7 @@
     }
     const label = source.textContent.trim();
     const signature = JSON.stringify([path, label]);
-    if (old?.dataset.signature === signature && old.parentElement === toolbar) return;
+    if (old?.dataset.signature === signature && old.nextElementSibling === toolbar) return;
     old?.remove();
     const parts = path.split("/").slice(0, -1);
     const labels = label.split("/").slice(0, -1);
@@ -111,7 +109,30 @@
       if (index === parts.length - 1) link.classList.add("notes-header-path-parent");
       breadcrumb.append(link);
     });
-    toolbar.append(breadcrumb);
+    toolbar.before(breadcrumb);
+  };
+  const updateBlockPaths = () => {
+    for (const trail of document.querySelectorAll("#main-content-container .breadcrumb.block-parents")) {
+      if (trail.closest(".references, .custom-query")) continue;
+      if (!trail.classList.contains("notes-block-path")) trail.classList.add("notes-block-path");
+      const source = [...trail.querySelectorAll("a")].find(link => !link.closest(".notes-block-page-path"));
+      if (!source || source.closest(".notes-block-page-path")) continue;
+      const path = source.getAttribute("data-ref") || source.textContent.trim();
+      if (!path.includes("/")) continue;
+      const old = trail.querySelector(".notes-block-page-path");
+      if (old?.dataset.path === path) continue;
+      old?.remove();
+      const span = document.createElement("span");
+      span.className = "notes-block-page-path";
+      span.dataset.path = path;
+      const parts = path.split("/");
+      parts.forEach((_, i) => {
+        if (i) span.append(createPathSeparator());
+        span.append(createPathLink(parts, parts, i));
+      });
+      source.before(span);
+      source.classList.add("notes-block-path-source");
+    }
   };
   window.notesUpdateParentPath = updateParentPath;
   document.addEventListener("pointerdown", (event) => {
@@ -126,18 +147,19 @@
       disclosure.querySelector("summary").focus();
     }
   }, { signal });
-  const observer = new MutationObserver((changes) => {
-    if (changes.some((change) => {
-      const target = change.target.nodeType === Node.ELEMENT_NODE ? change.target : change.target.parentElement;
-      return target?.closest(selector) || [...change.addedNodes, ...change.removedNodes].some((node) =>
-        node.nodeType === Node.ELEMENT_NODE && (node.matches(selector + ", #head") || node.querySelector(selector + ", #head")));
-    }) && frame === null) frame = requestAnimationFrame(render);
-  });
+  // Other customizations also observe titles and breadcrumbs. Do not react to
+  // their DOM writes with another MutationObserver: a bounded poll is enough.
+  const timer = setInterval(render, 500);
+  window.addEventListener("hashchange", render, { signal });
   signal.addEventListener("abort", () => {
-    observer.disconnect();
+    clearInterval(timer);
+
     if (frame !== null) cancelAnimationFrame(frame);
     if (window.notesUpdateParentPath === updateParentPath) delete window.notesUpdateParentPath;
     document.querySelector(".notes-header-path")?.remove();
+    document.querySelectorAll(".notes-block-page-path").forEach(node => node.remove());
+    document.querySelectorAll(".notes-block-path-source").forEach(node => node.classList.remove("notes-block-path-source"));
+    document.querySelectorAll(".notes-block-path").forEach(node => node.classList.remove("notes-block-path"));
     document.querySelectorAll(".notes-namespace-title").forEach((title) => title.remove());
     document.querySelectorAll(".notes-has-namespace-title").forEach((heading) =>
       heading.classList.remove("notes-has-namespace-title"));
