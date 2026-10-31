@@ -36,10 +36,10 @@
     const blocks = (await api().get_page_blocks_tree(name)) || [];
     // A normal first block with properties still locks only its own subtree.
     const holder = blocks.find((block) => block.preBlock || block["pre-block?"]);
-    const locked = truth(property(page)) || truth(property(holder));
+    const locked = truth(property(holder) ?? property(page));
     const blockLocks = new Map();
     const visit = (block, inherited) => {
-      const blocked = inherited || truth(property(block));
+      const blocked = property(block) == null ? inherited : truth(property(block));
       blockLocks.set(String(block.uuid), blocked);
       for (const child of block.children || []) visit(child, blocked);
     };
@@ -50,6 +50,7 @@
     if (locked && !page.classList.contains("notes-read-only"))
       clearBlockSelection();
     page.classList.toggle("notes-read-only", locked);
+    page.dataset.notesReadOnly = String(locked);
   };
 
   async function refresh() {
@@ -131,8 +132,8 @@
       event.target instanceof Element
         ? event.target
         : event.target.parentElement;
-    const page = target?.closest(".notes-read-only");
-    if (!page) return;
+    const page = target?.closest("[data-notes-read-only]");
+    if (page?.dataset.notesReadOnly !== "true") return;
     // Explicit table editing overrides page and ancestor text locks.
     // The editor handles its own events and validates opt-in again before saving.
     if (target.closest(".notes-table-editor")) return;
@@ -246,7 +247,9 @@
   signal.addEventListener("abort", () => {
     observer.disconnect();
     if (timer !== null) clearTimeout(timer);
-    document.querySelectorAll(".notes-read-only").forEach((page) => page.classList.remove("notes-read-only"));
+    document.querySelectorAll("[data-notes-read-only]").forEach((page) => {
+      page.classList.remove("notes-read-only"); delete page.dataset.notesReadOnly;
+    });
   });
   void refresh().catch((error) => console.warn("Reading mode:", error));
 })();

@@ -53,11 +53,16 @@ Device type is independent of window width. Reload after changing config.
 ## Properties
 
 Put page properties at the beginning of the file. Block properties apply to their
-block. Boolean properties have checkboxes; set them to `false` or remove them to disable.
+block. Boolean properties have checkboxes. `read-only`, `searchable`, `checklist`,
+`table-editable` and `table-wrap` inherit from the nearest ancestor, then the page
+properties block. An explicit `false` overrides an inherited `true`; removing
+a property restores inheritance. Search and checklist panels are mounted at
+explicit control blocks, not repeated on every descendant. Descendant overrides
+control which filters apply within those panels.
 
 | Property | Scope | Effect when true |
 | --- | --- | --- |
-| `read-only` | Page or block | Prevent text editing, including descendants; child false does not override a lock. |
+| `read-only` | Page or block | Prevent text editing, including descendants; the nearest explicit value wins. |
 | `searchable` | Page or block | Search page or nested blocks. |
 | `checklist` | Page or block | All / Unchecked / Checked filters for CHECK items. |
 | `table-wrap` | Table block | `true` or omitted keeps native Logseq layout; `false` keeps content width with horizontal scrolling. Explicit line breaks remain in both modes. |

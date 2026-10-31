@@ -52,7 +52,7 @@
   };
   let running = false;
   const truth = (value) => value === true || String(value).toLowerCase() === "true";
-  const property = (block, key) => block?.content?.match(
+  const property = (block, key) => block?.effective?.[key] ?? block?.content?.match(
     new RegExp(`^${key}::[ \\t]*(true|false)[ \\t]*$`, "im"))?.[1]
     ?? block?.properties?.[key] ?? block?.properties?.[key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())];
   const parse = (content) => {
@@ -249,7 +249,7 @@
       }
       position(); positionResizers();
     };
-    if (truth(property({ content: state.content }, "table-wrap"))) {
+    if (truth(property(state, "table-wrap"))) {
       cells().slice(0, -1).forEach((cell, index) => {
         const button = document.createElement("button");
         button.type = "button"; button.className = "notes-table-resizer";
@@ -329,7 +329,7 @@
     const editor = document.createElement("div");
     editor.className = "notes-table-editor";
     const status = document.createElement("span"); status.setAttribute("role", "status");
-    const state = { editor, status, content: block.content, uuid: block.uuid, graph, saving: false };
+    const state = { editor, status, content: block.content, effective: block.effective, uuid: block.uuid, graph, saving: false };
     const save = (change, redraw = true) => {
       state.queue = (state.queue || Promise.resolve()).then(() => persist(change, redraw));
       return state.queue;
@@ -341,6 +341,7 @@
         const sameGraph = () => graph === api.get_state_from_store?.("git/current-repo");
         if (!sameGraph()) throw Error("Graph changed. Reopen the page.");
         const latest = await api.get_block(state.uuid);
+        if (latest) latest.effective = await window.notesInheritedProperties(latest, ["table-editable", "table-wrap"]);
         if (!latest || !truth(property(latest, "table-editable"))) throw Error("Table editing is disabled.");
         if (signal.aborted || !sameGraph() || !table.isConnected) return;
         if (latest.content !== state.content) {
@@ -418,7 +419,7 @@
           columns.append(col);
         });
         grid.style.tableLayout = "fixed";
-        if (property({ content: state.content }, "table-wrap") === "false")
+        if (property(state, "table-wrap") === false)
           grid.style.width = `${totalWidth}px`;
         grid.append(columns);
       }
@@ -474,11 +475,12 @@
         const host = table.closest(".ls-block[blockid]");
         if (!host || host.querySelector("textarea:not(.notes-table-cell)")) continue;
         const block = await api.get_block(host.getAttribute("blockid"));
+        if (block) block.effective = await window.notesInheritedProperties(block, ["table-editable", "table-wrap"]);
         if (signal.aborted || graph !== api.get_state_from_store?.("git/current-repo")) return;
         if (!table.isConnected) continue;
         const native = nativeControls.get(table);
         if (native?.state.dragging) continue;
-        if (native && (native.state.content !== block?.content || truth(property(block, "table-editable")))) {
+        if (native && (native.state.content !== block?.content || JSON.stringify(native.state.effective) !== JSON.stringify(block?.effective) || truth(property(block, "table-editable")))) {
           native.cleanup(); nativeControls.delete(table);
         }
         const state = states.get(table);
@@ -491,7 +493,7 @@
           if (!nativeControls.has(table)) {
             applyViewWidths(table, truth(property(block, "table-wrap")) && saved?.length === count ? saved : null);
             if (block && truth(property(block, "table-wrap")) && parse(block.content)) {
-              const nativeState = {content: block.content, graph, uuid: block.uuid};
+              const nativeState = {content: block.content, effective: block.effective, graph, uuid: block.uuid};
               const sizes = [...table.querySelector("tr").children].map(cell => cell.getBoundingClientRect().width);
               nativeControls.set(table, { state: nativeState,
                 cleanup: addTableControls(table.parentElement, table, null, nativeState, sizes, true) });
@@ -499,7 +501,7 @@
           }
           continue;
         }
-        if (state && state.content !== block.content) remove(table, state);
+        if (state && (state.content !== block.content || JSON.stringify(state.effective) !== JSON.stringify(block.effective))) remove(table, state);
         if (!states.has(table)) mount(table, block, graph);
       }
     } catch (error) { console.warn("Table editor:", error); }

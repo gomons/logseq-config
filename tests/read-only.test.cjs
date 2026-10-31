@@ -7,7 +7,7 @@ const { window, document } = parseHTML(
 );
 let pageProps = {},
   rootValue = true,
-  childValue = false,
+  childValue = true,
   pre = false;
 const tree = () => [
   {
@@ -73,6 +73,9 @@ const update = async () => {
     !fire(block("child").querySelector(".notes-tag-input"), "beforeinput"),
   );
   assert(!fire(block("child").querySelector(".notes-tag-input"), "paste"));
+  childValue = false;
+  await update();
+  assert(!fire(block("child").querySelector(".block-content"), "click"));
   pageProps = { "read-only": true };
   rootValue = false;
   await update();
@@ -108,7 +111,7 @@ const update = async () => {
     assert(!fire(editor.querySelector("textarea"), type), type);
   }
   assert(!fire(editor.querySelector("button"), "click"));
-  assert(fire(block("child").querySelector(".block-content"), "beforeinput"));
+  assert(!fire(block("child").querySelector(".block-content"), "beforeinput"));
   pageProps = {};
   childValue = true;
   await update();

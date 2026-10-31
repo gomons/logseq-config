@@ -74,15 +74,19 @@ window.notesSubtreeSearch = new AbortController();
       const keep = new Set(),
         expand = new Map();
       let count = 0;
-      const visit = (node, parents, inherited) => {
+      const visit = (node, parents, inherited, settings) => {
+        settings = {
+          search: window.notesBooleanProperty(node, "searchable") ?? settings.search,
+          checklist: window.notesBooleanProperty(node, "checklist") ?? settings.checklist,
+        };
         const content = String(node.content || "").replace(
           /^\s*[\w-]+::.*$/gm,
           "",
         );
         const marker = content.trimStart().match(/^(CHECKED|CHECK)(?=\s|$)/)?.[1];
-        const statusMatch = filter === "all" ||
+        const statusMatch = !settings.checklist || filter === "all" ||
           (filter === "checked" ? marker === "CHECKED" : marker === "CHECK");
-        const match = statusMatch && terms.every((term) => normalize(content).includes(term));
+        const match = statusMatch && (!settings.search || terms.every((term) => normalize(content).includes(term)));
         if (match) {
           count++;
           parents.forEach((parent) => {
@@ -92,10 +96,10 @@ window.notesSubtreeSearch = new AbortController();
         }
         if (match || inherited) keep.add(node.uuid);
         for (const child of node.children || [])
-          visit(child, [...parents, node], filter === "all" && (inherited || match));
+          visit(child, [...parents, node], filter === "all" && (inherited || match), settings);
       };
       if (!tree) throw new Error("Search root is unavailable");
-      for (const child of tree.children || []) visit(child, state.pageName ? [] : [tree], false);
+      for (const child of tree.children || []) visit(child, state.pageName ? [] : [tree], false, state.options);
       state.keep = keep;
       // Open only paths to hits. Remember the original fold state for clearing.
       for (const [uuid, node] of expand) {
@@ -131,7 +135,9 @@ window.notesSubtreeSearch = new AbortController();
       const enabled = new Map();
       const isTrue = (value) => value === true || value === "true";
       for (const [block] of rows || []) {
-        const properties = block.properties || block["block/properties"] || {};
+        const uuid = block.uuid || block["block/uuid"];
+        const full = await api().get_block?.(uuid) || block;
+        const properties = await window.notesInheritedProperties(full, ["searchable", "checklist"]);
         const preBlock = block.preBlock ?? block["pre-block?"] ?? block["block/pre-block?"];
         const page = block.page || block["block/page"];
         const options = { search: isTrue(properties.searchable), checklist: isTrue(properties.checklist),

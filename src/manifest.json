@@ -1,6 +1,7 @@
 {
   "logseq/custom.js": [
     "src/js/config.js",
+    "src/js/inherited-properties.js",
     "src/js/aliases.js",
     "src/js/unlinked-references.js",
     "src/js/navigation.js",

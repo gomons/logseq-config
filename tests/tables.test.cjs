@@ -33,7 +33,7 @@ window.logseq = {
     },
   },
 };
-vm.runInNewContext(fs.readFileSync("src/js/table-editor.js", "utf8"), {
+vm.runInNewContext(fs.readFileSync("src/js/inherited-properties.js", "utf8") + fs.readFileSync("src/js/table-editor.js", "utf8"), {
   window,
   document,
   AbortController,
