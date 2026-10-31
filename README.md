@@ -134,11 +134,13 @@ Enable a catalog in page properties or in an ordinary block:
 
 ```text
 catalog-show:: true
-catalog-property:: creator, status, year
+catalog-property:: creator:Creator, status, year:Release year
 ```
 
 The catalog lists file-backed namespace descendants of the containing page, including deeper descendants. It renders inside its configuration block. The fold arrow hides the catalog and collapses real children; catalog folding is retained during the current session.
 Titles always link to the original page and show its leaf name with aliases below.
+`catalog-property` accepts `property:Display label` entries (split at the first colon). Labels are optional; missing or empty labels use the original property name. Labels affect display only, while property lookup and linked aliases remain unchanged.
+
 `catalog-property` controls field order, display and search scope; empty values are
 omitted. Linked values show the linked page's name and aliases. Search combines
 titles, page aliases and configured values with their linked aliases. Fields are configured manually in properties; the only catalog control is search.

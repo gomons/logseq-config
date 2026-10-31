@@ -22,8 +22,14 @@
   const keysFor = ({preamble, properties}) => {
     const raw = field(preamble, "content")?.match(/^catalog-property::[ \t]*(.*)$/m)?.[1]
       ?? properties["catalog-property"];
-    return [...new Set(values(raw).flatMap(value => String(value).split(","))
-      .map(key => key.trim().replace(/^\[\[|\]\]$/g, "")).filter(Boolean))];
+    const fields = new Map();
+    for (const entry of values(raw).flatMap(value => String(value).split(","))) {
+      const separator = entry.indexOf(":");
+      const key = (separator < 0 ? entry : entry.slice(0, separator)).trim().replace(/^\[\[|\]\]$/g, "");
+      const caption = separator < 0 ? key : entry.slice(separator + 1).trim() || key;
+      if (key && !fields.has(key)) fields.set(key, {key, caption});
+    }
+    return [...fields.values()];
   };
   const link = (pageName, caption) => {
     const a = document.createElement("a");
@@ -52,10 +58,10 @@
   const render = (children, keys, pages) => {
     const list = document.createElement("ul"); list.className = "notes-catalog";
     // Expose configured order even when some properties are empty on every page.
-    list.dataset.properties = JSON.stringify(keys);
+    list.dataset.properties = JSON.stringify(keys.map(field => field.key));
     for (const page of children) {
       const row = document.createElement("li"); row.className = "notes-catalog-item";
-      const add = (key, items, title = false) => {
+      const add = (key, items, title = false, displayName = key) => {
         if (!items.length) return;
         const node = document.createElement("div");
         node.className = "notes-catalog-field" + (title ? " notes-catalog-title" : "");
@@ -64,7 +70,7 @@
         else {
           if (key !== "page-alias") {
             const caption = document.createElement("span"); caption.className = "notes-catalog-label";
-            caption.textContent = `${key}: `; node.append(caption);
+            caption.textContent = `${displayName}: `; node.append(caption);
           }
           items.forEach((value, index) => {
             if (index) node.append(document.createTextNode("; "));
@@ -77,7 +83,7 @@
       add("page-title", [name(page)], true);
       add("page-alias", aliases(page));
       const props = settings(page).properties;
-      for (const key of keys) add(key, values(props[key]));
+      for (const {key, caption} of keys) add(key, values(props[key]), false, caption);
       list.append(row);
     }
     return list;
