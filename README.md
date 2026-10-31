@@ -130,10 +130,21 @@ as plain text. Conflicting edits require review and retry.
 
 ## Catalogs
 
-Queries live in the graph. This project styles and searches `.notes-catalog`
-with `.notes-catalog-item` rows and `.notes-catalog-field` searchable fields.
-Hidden fields are excluded. For titles and aliases, add `.notes-catalog-title`
-and `data-field="page-title"` or `data-field="page-alias"` to the field.
+Enable a catalog in page properties or in an ordinary block:
+
+```text
+catalog-show:: true
+catalog-property:: creator, status, year
+```
+
+The catalog lists file-backed namespace descendants of the containing page, including deeper descendants. It renders inside its configuration block. The fold arrow hides the catalog and collapses real children; catalog folding is retained during the current session.
+Titles always link to the original page and show its leaf name with aliases below.
+`catalog-property` controls field order, display and search scope; empty values are
+omitted. Linked values show the linked page's name and aliases. Search combines
+titles, page aliases and configured values with their linked aliases. Fields are configured manually in properties; the only catalog control is search.
+No type-specific queries are needed in notes.
+The generated section follows the visible page properties block; these properties
+apply only to the owning page, not by inheritance. JavaScript must be enabled.
 
 ## Development
 

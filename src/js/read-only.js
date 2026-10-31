@@ -119,7 +119,7 @@
         ".block-control", ".bullet-link-wrap", ".block-children-left-border",
         ".open-block-ref-link", ".block-ref-wrap", ".page-blocks-collapse-control",
         ".foldable-title", ".notes-page-list-filter", ".notes-subtree-search",
-        ".notes-contents-search", ".notes-catalog-search",
+        ".notes-contents-search", ".notes-catalog-search", ".notes-catalog-fold, .notes-generated-catalog",
         "summary", "a[href]", ".page-ref", ".tag", "audio[controls]", "video[controls]",
         ".asset-action-btn.text-left", ".asset-action-btn:has(.ti-copy, .ti-maximize)",
         ".custom-query a:has(.ti-refresh)",

@@ -11,6 +11,7 @@
     "src/js/read-only.js",
     "src/js/subtree-search.js",
     "src/js/contents.js",
+    "src/js/catalogs.js",
     "src/js/catalog-search.js",
     "src/js/checklists.js",
     "src/js/boolean-properties.js",
