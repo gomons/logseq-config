@@ -83,7 +83,7 @@ window.notesSubtreeSearch = new AbortController();
           /^\s*[\w-]+::.*$/gm,
           "",
         );
-        const marker = content.trimStart().match(/^(CHECKED|CHECK)(?=\s|$)/)?.[1];
+        const marker = content.trimStart().match(/^(CHECKED|CHECK)(?=\s|$)/i)?.[1]?.toUpperCase();
         const statusMatch = !settings.checklist || filter === "all" ||
           (filter === "checked" ? marker === "CHECKED" : marker === "CHECK");
         const match = statusMatch && (!settings.search || terms.every((term) => normalize(content).includes(term)));
@@ -94,9 +94,12 @@ window.notesSubtreeSearch = new AbortController();
             expand.set(parent.uuid, parent);
           });
         }
-        if (match || inherited) keep.add(node.uuid);
+        // Preserve explanations below a matching item; a nested task has its
+        // own status and can start a new matching chain.
+        const context = inherited && (filter === "all" || !settings.checklist || !marker || statusMatch);
+        if (match || context) keep.add(node.uuid);
         for (const child of node.children || [])
-          visit(child, [...parents, node], filter === "all" && (inherited || match), settings);
+          visit(child, [...parents, node], context || match, settings);
       };
       if (!tree) throw new Error("Search root is unavailable");
       for (const child of tree.children || []) visit(child, state.pageName ? [] : [tree], false, state.options);

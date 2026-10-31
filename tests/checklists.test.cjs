@@ -5,8 +5,8 @@ const { parseHTML } = require("linkedom");
 
 const { window, document } = parseHTML(
   `<html><body>${[
-    "CHECK Buy milk",
-    "CHECKED Buy bread",
+    "check Buy milk",
+    "cHeCkEd Buy bread",
     "CHECKING Legacy text",
     "CHECKER Plain text",
   ]
@@ -17,8 +17,8 @@ const { window, document } = parseHTML(
     .join("")}</body></html>`,
 );
 const contents = [
-  "CHECK Buy milk",
-  "tag:: value\nCHECKED Buy bread",
+  "check Buy milk",
+  "tag:: value\ncHeCkEd Buy bread",
   "CHECKING Legacy text",
   "CHECKER Plain text",
 ];
@@ -65,7 +65,7 @@ runInNewContext(source, {
   ]);
   window.notesCheckTasks.abort();
   assert.equal(document.querySelectorAll(".notes-check-controls").length, 0);
-  assert.equal(document.querySelector(".inline").textContent, "CHECK Buy milk");
+  assert.equal(document.querySelector(".inline").textContent, "check Buy milk");
 })().catch((error) => {
   console.error(error);
   process.exitCode = 1;

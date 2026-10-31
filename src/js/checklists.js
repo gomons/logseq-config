@@ -4,8 +4,8 @@
   const controller = new AbortController();
   window.notesCheckTasks = controller;
   const { signal } = controller;
-  const prefix = /^(CHECKED|CHECK)(?=\s|$)/;
-  const storedPrefix = /^((?:[ \t]*[\w-]+::[^\n]*\n)*[ \t]*)(CHECKED|CHECK)(?=\s|$)/;
+  const prefix = /^(CHECKED|CHECK)(?=\s|$)/i;
+  const storedPrefix = /^((?:[ \t]*[\w-]+::[^\n]*\n)*[ \t]*)(CHECKED|CHECK)(?=\s|$)/i;
   const nativeClass = { CHECK: "todo", CHECKED: "done" };
   const controls = new Map();
   const pending = new Set();
@@ -49,7 +49,7 @@
       if (signal.aborted || !text.isConnected ||
           text.textContent.match(prefix)?.[1] !== match[1] ||
           block?.content?.match(storedPrefix)?.[2] !== match[1]) return;
-      const status = match[1];
+      const status = match[1].toUpperCase();
       const title = text.parentElement.closest(".inline, h1, h2, h3, h4, h5, h6");
       if (!title || title.closest(".ls-block") !== host) return;
       const control = document.createElement("span");

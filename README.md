@@ -91,8 +91,9 @@ These sections start expanded and can also be used independently on other blocks
 Tagged pages is hidden where the Pages tree is displayed. Favorites are unaffected
 by `contents-exclude`.
 
-Start a block with `CHECK` or `CHECKED` for interactive checkboxes with distinct
-styling from TODO tasks. `checklist-exclude` is used by a query in the notes graph;
+Start a block with `CHECK` or `CHECKED` (case-insensitive) for interactive checkboxes with distinct
+styling from TODO tasks. Checklist filters preserve ancestors and explanations
+below matching items; nested CHECK items are evaluated by their own status. `checklist-exclude` is used by a query in the notes graph;
 this repository does not implement that query.
 
 `table-wrap` works independently of editing. `true` and an omitted property keep
