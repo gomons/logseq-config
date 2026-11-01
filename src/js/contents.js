@@ -90,7 +90,22 @@
     states.get(anchor)?.section.remove();
     states.delete(anchor);
   };
-  const renderTree = (pages, previous) => {
+  const renderTree = (pages, previous, excluded = new Set()) => {
+    const expanded = new Map(pages.map(page => [page.name, page]));
+    for (const page of pages) {
+      if (page.pinned) continue;
+      const parts = page.name.split("/");
+      const labels = page.label.split("/");
+      for (let depth = 1; depth < parts.length; depth++) {
+        const name = parts.slice(0, depth).join("/");
+        if (!expanded.has(name) && !excluded.has(name)) expanded.set(name, {
+          name, label: labels.slice(0, depth).join("/"),
+          parent: depth > 1 ? parts.slice(0, depth - 1).join("/") : null,
+          pinned: false,
+        });
+      }
+    }
+    pages = [...expanded.values()];
     const children = new Map();
     const roots = [];
     const names = new Set(pages.map((page) => page.name));
@@ -271,7 +286,7 @@
               state.section.insertBefore(group.element, position);
             if (group.signature === signature) continue;
             const old = group.element.querySelector(".notes-contents-tree, .notes-tag-cloud");
-            const body = key === "pages" ? renderTree(visiblePages, old)
+            const body = key === "pages" ? renderTree(visiblePages, old, new Set(pages.filter(page => page.ignored).map(page => page.name)))
               : key === "favorites" ? renderFavorites(favorites) : renderTags(tags);
             if (old) old.replaceWith(body);
             else group.element.append(body);

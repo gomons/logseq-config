@@ -100,6 +100,8 @@ vm.runInNewContext(source, {
 const tick = () => new Promise((resolve) => setTimeout(resolve, 200));
 (async () => {
   await tick();
+  assert(document.querySelector('details[data-page="life/absent"]'), 'Implicit namespace gets its own branch');
+  assert(document.querySelector('details[data-page="life/absent"] a[href="#/page/life%2Fabsent%2Fleaf"]'), 'Leaf is nested under implicit parent');
   const tree = () => document.querySelector(".notes-contents-tree");
   const link = () => tree().querySelector('a[href="#/page/life%2Fdiary"]');
   assert(link());
