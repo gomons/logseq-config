@@ -29,7 +29,7 @@
           button = document.createElement("button");
           button.type = "button";
           button.className = "notes-page-favorite button icon";
-          button.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 2 3 6.4 7 .9-5.1 4.9 1.3 7-6.2-3.4-6.2 3.4 1.3-7L2 9.3l7-.9Z"/></svg>';
+          button.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 2 3 6.4 7 .9-5.1 4.9 1.3 7-6.2-3.4-6.2 3.4 1.3-7L2 9.3l7-.9Z"/></svg>';
           for (const type of ["pointerdown", "mousedown", "touchstart", "dblclick"])
             button.addEventListener(type, (event) => event.stopPropagation(), { signal });
           button.addEventListener("click", async (event) => {

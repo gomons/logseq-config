@@ -43,8 +43,10 @@
   -webkit-app-region: no-drag;
   -webkit-tap-highlight-color: transparent;
 }
-#head .notes-toolbar-actions > .button:hover {
-  color: var(--lx-gray-12, var(--ls-header-button-background, var(--rx-gray-12)));
+@media (hover: hover) and (pointer: fine) {
+  #head .notes-toolbar-actions > .button:hover {
+    color: var(--lx-gray-12, var(--ls-header-button-background, var(--rx-gray-12)));
+  }
 }
 #head .notes-toolbar-actions > .button[hidden] {
   display: none !important;
@@ -100,6 +102,10 @@
     align-items: center;
   }
 
+}
+#head .notes-toolbar-actions .notes-page-favorite svg {
+  fill: none;
+  color: inherit;
 }
 #head .notes-toolbar-actions .notes-page-favorite[aria-pressed="true"] svg {
   fill: currentColor;
