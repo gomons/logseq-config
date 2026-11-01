@@ -8,6 +8,7 @@
     "src/js/folds.js",
     "src/js/contents-shortcut.js",
     "src/js/page-path.js",
+    "src/js/block-fold-context.js",
     "src/js/read-only.js",
     "src/js/subtree-search.js",
     "src/js/contents.js",
