@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
 const {parseHTML}=require('linkedom');
-const {window,document}=parseHTML('<html><body><div class="ls-block" blockid="config"><div class="block-content"></div></div></body></html>');
+const {window,document}=parseHTML('<html><body><div class="ls-block" blockid="config"><div class="flex"><div class="block-control-wrap"><a class="block-control"><span class="control-hide"><span class="rotating-arrow"></span></span></a></div></div><div class="block-content"></div></div></body></html>');
 const pre={uuid:'config','pre-block?':false,content:'catalog-property:: creator:Made by: author, year:, creator:Duplicate',properties:{'catalog-show':true,'catalog-property':['creator','year']}};
 const root={name:'examples',properties:{},'_page':[pre]};
 const person={name:'people/writer','original-name':'People/Writer',alias:[{name:'автор','original-name':'Автор'}]};

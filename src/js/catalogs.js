@@ -89,9 +89,14 @@
     return list;
   };
   const remove = state => {
-    state.section.remove(); state.toggle?.remove();
+    state.section.remove();
+    state.unbind?.();
+    if (state.createdControl) state.toggle?.remove();
+    else state.toggle?.classList.remove("notes-catalog-fold");
+    if (state.originalHaschild == null) state.host?.removeAttribute("haschild");
+    else state.host?.setAttribute("haschild", state.originalHaschild);
     state.host?.classList.remove("notes-catalog-host");
-    state.controls?.forEach(node => node.classList.remove("notes-catalog-native-fold"));
+
   };
   let running = false;
   const refresh = async () => {
@@ -138,32 +143,43 @@
               section.setAttribute("aria-label", "Catalog"); content.append(section);
               for (const type of ["pointerdown","mousedown","click","keydown","keyup","change"])
                 section.addEventListener(type, event => event.stopPropagation(), {signal});
-              const toggle = document.createElement("button");
-              toggle.type = "button"; toggle.className = "notes-catalog-fold";
-              host.classList.add("notes-catalog-host"); host.prepend(toggle);
-              state = {section, toggle, host, controls: []}; states.set(host,state);
-              for (const type of ["pointerdown", "mousedown", "keydown", "keyup"])
-                toggle.addEventListener(type, event => event.stopPropagation(), {signal});
-              toggle.addEventListener("click", async event => {
-                event.preventDefault(); event.stopPropagation();
+              host.classList.add("notes-catalog-host");
+              state = {section, host, originalHaschild: host.getAttribute("haschild")}; states.set(host,state);
+            }
+            let toggle = [...host.querySelectorAll(".block-control")]
+              .find(node => node.closest(".ls-block") === host);
+            if (!toggle) {
+              const wrap = [...host.querySelectorAll(".block-control-wrap")]
+                .find(node => node.closest(".ls-block") === host);
+              const template = document.querySelector(".block-control:has(.rotating-arrow)");
+              if (wrap && template) {
+                toggle = template.cloneNode(true); toggle.removeAttribute("id");
+                wrap.prepend(toggle); state.createdControl = true;
+              }
+            }
+            host.setAttribute("haschild", "true");
+            if (toggle && state.toggle !== toggle) {
+              state.unbind?.(); state.toggle = toggle;
+              toggle.classList.add("notes-catalog-fold");
+              const click = async event => {
+                event.preventDefault(); event.stopImmediatePropagation();
                 const collapsed = !state.section.hidden;
                 folds.set(`${graph}:${uuid}`, collapsed);
                 state.section.hidden = collapsed;
-                state.toggle.setAttribute("aria-expanded", String(!collapsed));
+                toggle.setAttribute("aria-expanded", String(!collapsed));
+                toggle.querySelector(".rotating-arrow")?.classList.toggle("collapsed", collapsed);
                 try { await api.set_block_collapsed(uuid, collapsed); }
                 catch (error) { console.warn("Catalog collapse:", error); }
                 void refresh();
-              }, {signal});
+              };
+              toggle.addEventListener("click", click, true);
+              state.unbind = () => toggle.removeEventListener("click", click, true);
             }
             state.section.hidden = folds.get(`${graph}:${uuid}`) ?? (field(stored, "collapsed?") === true || stored?.collapsed === true
               || stored?.properties?.collapsed === true || stored?.properties?.collapsed === "true");
-            state.toggle.setAttribute("aria-expanded", String(!state.section.hidden));
-            state.toggle.setAttribute("aria-label", state.section.hidden ? "Expand catalog block" : "Collapse catalog block");
-            state.controls = [...host.querySelectorAll(".block-control")]
-              .filter(node => node.closest(".ls-block") === host);
-            state.controls.forEach(node => node.classList.add("notes-catalog-native-fold"));
-            const control = state.controls[0];
-            if (control && state.toggle.parentElement !== control) control.append(state.toggle);
+            state.toggle?.setAttribute("aria-expanded", String(!state.section.hidden));
+            state.toggle?.setAttribute("aria-label", state.section.hidden ? "Expand catalog block" : "Collapse catalog block");
+            state.toggle?.querySelector(".rotating-arrow")?.classList.toggle("collapsed", state.section.hidden);
             if (state.signature !== signature) {
               state.section.replaceChildren(render(children, keys, pages)); state.signature = signature;
             }

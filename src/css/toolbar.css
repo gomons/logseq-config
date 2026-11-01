@@ -181,3 +181,31 @@
   outline-offset: 2px;
 }
 
+
+#head .notes-toolbar-navigation { display: flex; gap: 4px; pointer-events: none; }
+#head .notes-toolbar-navigation > .button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 4px; margin: 0;
+  flex: 0 0 32px; pointer-events: auto; -webkit-app-region: no-drag;
+  color: var(--lx-gray-11, var(--ls-secondary-text-color));
+}
+#head .notes-toolbar-navigation > .button svg { width: 22px; height: 22px; }
+
+/* One baseline for the actual drawings; keep the native touch targets. */
+#head .button.icon {
+  box-sizing: border-box;
+  align-items: flex-end !important;
+  padding-top: 4px !important;
+  padding-bottom: 6px !important;
+  height: 32px;
+}
+#head .button.icon > .ui__icon {
+  align-items: flex-end;
+  height: 20px;
+}
+#head .button.icon svg { display: block; flex-shrink: 0; }
+
+#head .notes-normalized-button > :not(.notes-native-drawing) { display: none !important; }
+#head .notes-normalized-button > .notes-native-drawing { display: block; }
+
+#head .notes-normalized-button { display: inline-flex; align-items: flex-end; justify-content: center; height: 32px; padding: 4px 4px 6px; }
