@@ -46,6 +46,9 @@ Device type is independent of window width. Reload after changing config.
   journals, implicit pages without files, service directories and root AGENTS/README.
   Search matches leaf names and aliases, showing full clickable paths without
   alias captions. Refresh preserves tree folds; reload resets them.
+- Linked References excludes references to namespace descendants, while keeping exact
+  page links, hashtags and indexed property values (including aliases). Context under
+  direct references is preserved; native source filters and search remain available.
 - Ordinary block arrows clear stale reference-editor context after editing ends,
   preventing Logseq 0.10.x from ignoring folds. Reference/result folds keep their native behavior.
 - Block search includes folded descendants, opens paths to matches and restores

@@ -61,3 +61,6 @@ div.flex-1.page.relative > :is(
   border-radius: 6px;
   background: var(--ls-secondary-background-color);
 }
+
+/* Preserve native reference nodes and fold state while excluding indirect hits. */
+.notes-indirect-reference { display: none !important; }

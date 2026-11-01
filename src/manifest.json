@@ -5,6 +5,7 @@
     "src/js/aliases.js",
     "src/js/unlinked-references.js",
     "src/js/navigation.js",
+    "src/js/direct-references.js",
     "src/js/folds.js",
     "src/js/contents-shortcut.js",
     "src/js/page-path.js",
