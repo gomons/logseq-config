@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
 const {parseHTML}=require('linkedom');
-const {window,document}=parseHTML('<html><body><div class="ls-block" blockid="config"><div class="flex"><div class="block-control-wrap"><a class="block-control"><span class="control-hide"><span class="rotating-arrow"></span></span></a></div></div><div class="block-content"></div></div></body></html>');
+const {window,document}=parseHTML('<html><body><div class="ls-block" blockid="config"><div class="flex"><div class="block-control-wrap"><a class="block-control"><span class="control-hide"><span class="rotating-arrow not-collapsed"></span></span></a></div></div><div class="block-content"></div></div></body></html>');
 const pre={uuid:'config','pre-block?':false,content:'catalog-property:: creator:Made by: author, year:, creator:Duplicate',properties:{'catalog-show':true,'catalog-property':['creator','year']}};
 const root={name:'examples',properties:{},'_page':[pre]};
 const person={name:'people/writer','original-name':'People/Writer',alias:[{name:'автор','original-name':'Автор'}]};
@@ -33,7 +33,18 @@ const tick=()=>new Promise(setImmediate);
  assert(![...document.querySelectorAll('button')].some(n=>n.textContent.includes('Add condition')));
  document.querySelector('.notes-catalog-fold').click();await tick();await poll();
  assert(document.querySelector('.notes-generated-catalog').hidden);
+ assert(document.querySelector('.rotating-arrow.collapsed:not(.not-collapsed)'));
  document.querySelector('.notes-catalog-fold').click();await tick();await poll();assert.equal(pre.collapsed,false);
+ assert(document.querySelector('.rotating-arrow.not-collapsed:not(.collapsed)'));
+ // A mobile leaf can have a control wrapper but no native arrow anywhere.
+ document.querySelector('.block-control').remove();
+ await poll();
+ assert(document.querySelector('.notes-catalog-fold .rotating-arrow svg'));
+ document.querySelector('.notes-catalog-fold').click();await tick();await poll();
+ assert(document.querySelector('.notes-generated-catalog').hidden);
+ assert(document.querySelector('.rotating-arrow.collapsed:not(.not-collapsed)'));
+ document.querySelector('.notes-catalog-fold').click();await tick();await poll();
+ assert(!document.querySelector('.notes-generated-catalog').hidden);
  const stable=document.querySelector('.notes-catalog');await poll();assert.equal(document.querySelector('.notes-catalog'),stable);
  person.alias.push({name:'new alias'});await poll();assert(document.querySelector('.notes-catalog').textContent.includes('new alias'));
  pre.properties['catalog-show']=false;root.properties['catalog-show']=false;await poll();assert(!document.querySelector('.notes-generated-catalog'));assert(!document.querySelector('.notes-catalog-fold'));

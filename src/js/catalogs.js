@@ -6,6 +6,11 @@
   const {signal} = controller;
   const states = new Map();
   const folds = new Map();
+  const updateArrow = (toggle, collapsed) => {
+    const arrow = toggle?.querySelector(".rotating-arrow");
+    arrow?.classList.toggle("collapsed", collapsed);
+    arrow?.classList.toggle("not-collapsed", !collapsed);
+  };
   const field = (object, key) => object?.[key] ?? object?.[`block/${key}`];
   const values = value => value == null || value === "" ? [] : Array.isArray(value) ? value : [value];
   const name = page => field(page, "name") || "";
@@ -151,9 +156,11 @@
             if (!toggle) {
               const wrap = [...host.querySelectorAll(".block-control-wrap")]
                 .find(node => node.closest(".ls-block") === host);
-              const template = document.querySelector(".block-control:has(.rotating-arrow)");
-              if (wrap && template) {
-                toggle = template.cloneNode(true); toggle.removeAttribute("id");
+              if (wrap) {
+                // Match Logseq's native control without depending on another visible block.
+                toggle = document.createElement("a");
+                toggle.className = "block-control";
+                toggle.innerHTML = '<span class="control-hide"><span class="rotating-arrow not-collapsed"><svg aria-hidden="true" viewBox="0 0 192 512" fill="currentColor" display="inline-block" style="margin-left:2px" class="h-4 w-4"><path d="M0 384.662V127.338c0-17.818 21.543-26.741 34.142-14.142l128.662 128.662c7.81 7.81 7.81 20.474 0 28.284L34.142 398.804C21.543 411.404 0 402.48 0 384.662z" fill-rule="evenodd"/></svg></span></span>';
                 wrap.prepend(toggle); state.createdControl = true;
               }
             }
@@ -167,7 +174,7 @@
                 folds.set(`${graph}:${uuid}`, collapsed);
                 state.section.hidden = collapsed;
                 toggle.setAttribute("aria-expanded", String(!collapsed));
-                toggle.querySelector(".rotating-arrow")?.classList.toggle("collapsed", collapsed);
+                updateArrow(toggle, collapsed);
                 try { await api.set_block_collapsed(uuid, collapsed); }
                 catch (error) { console.warn("Catalog collapse:", error); }
                 void refresh();
@@ -179,7 +186,7 @@
               || stored?.properties?.collapsed === true || stored?.properties?.collapsed === "true");
             state.toggle?.setAttribute("aria-expanded", String(!state.section.hidden));
             state.toggle?.setAttribute("aria-label", state.section.hidden ? "Expand catalog block" : "Collapse catalog block");
-            state.toggle?.querySelector(".rotating-arrow")?.classList.toggle("collapsed", state.section.hidden);
+            updateArrow(state.toggle, state.section.hidden);
             if (state.signature !== signature) {
               state.section.replaceChildren(render(children, keys, pages)); state.signature = signature;
             }
