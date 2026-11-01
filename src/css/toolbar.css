@@ -139,3 +139,16 @@
   width: 18px;
   height: 18px;
 }
+
+/* Match Home to the adjacent custom actions on desktop and mobile. */
+#head .ls-icon-home > svg,
+#head svg.ls-icon-home,
+#head svg.tabler-icon-home,
+#head svg.icon-tabler-home {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.8;
+}
+#head .ti-home {
+  font-size: 20px;
+}
