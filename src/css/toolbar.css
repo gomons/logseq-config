@@ -152,3 +152,115 @@
 #head .ti-home {
   font-size: 20px;
 }
+
+/* Keep our tools together in their own permanent, bordered row. */
+#head:has(> .notes-toolbar-navigation) {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  height: auto;
+  min-height: 48px;
+  padding-bottom: 6px;
+  row-gap: 4px;
+}
+#head > .r { justify-self: end; }
+#head > .notes-toolbar-navigation {
+  position: static;
+  transform: none;
+  grid-column: 1 / -1;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--ls-border-color, #888);
+  border-radius: 5px;
+  background: var(--ls-primary-background-color);
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+#head .notes-toolbar-actions { gap: 4px; }
+#head .notes-toolbar-navigation .button {
+  color: var(--lx-gray-11, var(--ls-secondary-text-color));
+  border-radius: 3px;
+  min-width: 32px;
+  min-height: 32px;
+}
+#head .notes-toolbar-navigation :is(:disabled, [aria-disabled="true"]) {
+  opacity: .35;
+  cursor: default;
+}
+#head .notes-toolbar-navigation [aria-current="page"],
+#head .notes-toolbar-navigation [aria-pressed="true"] {
+  background: var(--ls-secondary-background-color);
+  color: var(--ls-link-text-color);
+}
+@media (pointer: coarse), (max-width: 640px) {
+  #head .notes-toolbar-navigation .button { width: 40px; height: 40px; }
+}
+
+#head .notes-native-toolbar-replaced { display: none !important; }
+
+/* Align the tools with the native controls, starting at the left. */
+#head:has(> .notes-toolbar-navigation) {
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  column-gap: 8px;
+}
+#head > .l { grid-column: 1; grid-row: 1; }
+#head > .r { grid-column: 3; grid-row: 1; }
+#head > .notes-toolbar-navigation {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+}
+
+/* Equal inset above and to the left of our tools, including mobile safe areas. */
+#head:has(> .notes-toolbar-navigation) {
+  --notes-toolbar-inset: 8px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--notes-toolbar-inset));
+  padding-bottom: var(--notes-toolbar-inset);
+}
+#head > .notes-toolbar-navigation { margin-left: 0; }
+@media (max-width: 640px) {
+  #head:has(> .notes-toolbar-navigation) {
+    padding-left: max(var(--notes-toolbar-inset), env(safe-area-inset-left));
+    row-gap: var(--notes-toolbar-inset);
+  }
+  #head > .notes-toolbar-navigation { margin-left: 0; }
+}
+/* Logseq mounts a separate chevron-style back button on mobile routes. */
+#head:has(> .notes-toolbar-navigation) :is(.navigation.nav-left, .navigation.nav-right) {
+  display: none !important;
+}
+
+/* Mobile: retain one row between the native sidebar and menu controls. */
+@media (max-width: 640px) {
+  #head:has(> .notes-toolbar-navigation) {
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    column-gap: 4px;
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+  #head > :is(.l, .r) { width: auto; }
+  #head > .r { grid-column: 3; grid-row: 1; gap: 0; }
+  #head > .notes-toolbar-navigation {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    box-sizing: border-box;
+    width: min(100%, 260px);
+    gap: 2px;
+    padding: 2px;
+  }
+  #head .notes-toolbar-navigation .notes-toolbar-actions { display: contents; }
+  #head .notes-toolbar-navigation .button {
+    box-sizing: border-box;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 24px;
+    height: 36px;
+    min-height: 36px;
+    padding: 2px;
+  }
+}
+/* Links and buttons use the same icon color on mobile themes as well. */
+#head .notes-toolbar-navigation .button svg { color: inherit; stroke: currentColor; }

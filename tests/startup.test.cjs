@@ -45,10 +45,7 @@ document.querySelector("#head .r button").getBoundingClientRect = () => ({
 vm.runInNewContext(fs.readFileSync("dist/logseq/custom.js", "utf8"), context);
 for (const fn of timers) fn();
 assert(document.querySelector("#head .notes-contents-shortcut"));
-assert.equal(
-  document.querySelector(".notes-toolbar-navigation").style.right,
-  "208px",
-);
+
 assert(
   document.documentElement.classList.contains("notes-hide-unlinked-references"),
 );
@@ -62,14 +59,14 @@ assert.equal(path.querySelector("a").textContent, "Leisure");
 assert.equal(path.querySelectorAll(":scope > a").length, 1);
 assert.equal(path.querySelector("[aria-current=page]"), null);
 assert.equal(
-  document.querySelector(".notes-contents-shortcut").parentElement.className,
-  "notes-toolbar-actions",
+  document.querySelector(".notes-contents-shortcut").previousElementSibling.getAttribute("aria-label"),
+  "Home",
 );
 const source = document.querySelector(".title");
 source.setAttribute("data-ref", "contents");
 source.textContent = "Contents";
 for (const fn of timers) fn();
-assert.equal(document.querySelector(".notes-contents-shortcut").hidden, true);
+assert.equal(document.querySelector(".notes-contents-shortcut").hidden, false);
 assert.equal(document.querySelector(".notes-header-path"), null);
 source.setAttribute("data-ref", "shopping");
 source.textContent = "Shopping";
@@ -102,14 +99,8 @@ document.querySelector("#head .r button").getBoundingClientRect = () => ({
   width: 40,
 });
 for (const fn of timers) fn();
-assert.equal(
-  document.querySelector(".notes-toolbar-navigation").style.left,
-  "88px",
-);
-assert.equal(
-  document.querySelector(".notes-toolbar-navigation").style.right,
-  "88px",
-);
+
+
 assert.equal(
   document.querySelector(".notes-header-path-parent").textContent,
   "Games",

@@ -35,7 +35,14 @@ Device type is independent of window width. Reload after changing config.
 
 ## Navigation and search
 
-- Toolbar buttons open Contents and toggle native Favorites. Page headings show
+- A permanent bordered toolbar groups Home, Contents, Back, Forward, New page,
+  Search and Favorites. It replaces native duplicates, including mobile's back
+  chevron, and stays beside the sidebar toggle on narrow screens. Current Home
+  and Contents are highlighted; unavailable actions remain visible and disabled.
+  Contents uses the same button and icon styling as its neighbors on mobile.
+  History bounds use the Navigation API when available; older WebViews track
+  entries from the first load of this customization and retain bounds on reload.
+- Page headings show
   leaf names; each segment of the parent path is clickable. On narrow screens,
   earlier parents move into a popup.
 - Subpages, Tagged pages and Linked References have search and saved fold states.

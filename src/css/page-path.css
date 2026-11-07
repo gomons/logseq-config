@@ -2,15 +2,6 @@
 #head:has(> .notes-toolbar-navigation) {
   position: relative;
 }
-#head .notes-toolbar-navigation {
-  min-width: 0;
-  gap: 0.4rem;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-}
 .notes-toolbar-navigation[hidden],
 .notes-toolbar-navigation > [hidden] {
   display: none !important;
