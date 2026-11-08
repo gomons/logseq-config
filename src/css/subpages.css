@@ -54,7 +54,7 @@
   flex-wrap: wrap;
 }
 .ls-page-title + .page-hierarchy {
-  padding-right: 8px;
+  padding-right: 0;
   flex: 0 0 100%;
   width: 100%;
   min-width: 0;
@@ -67,4 +67,18 @@
 .page-hierarchy.notes-subpages-empty .notes-page-list-filter,
 .page-hierarchy.notes-subpages-empty .notes-navigation-list {
   display: none;
+}
+
+/* Keep Add beside the heading rather than stretching its native inner row. */
+#main-content-container .page-hierarchy .foldable-title > div {
+  flex: 0 1 auto !important;
+  width: auto;
+}
+.notes-subpage-create {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  line-height: 1;
+  flex-shrink: 0;
 }
