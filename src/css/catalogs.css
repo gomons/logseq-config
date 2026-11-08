@@ -132,22 +132,3 @@
 .notes-catalog-fold[aria-expanded="false"] > .control-hide {
   display: block;
 }
-
-/* Catalog folds reuse a native 22px slot. Keep that slot (and the bullet)
-   stationary, but fit the glyph inside the shared, narrower desktop gutter. */
-main:not(.ls-fold-button-on-right) #main-content-container .notes-catalog-fold {
-  box-sizing: border-box;
-  padding: 0 0 0 calc(22px - var(--notes-fold-size));
-}
-main:not(.ls-fold-button-on-right) #main-content-container .notes-catalog-fold .rotating-arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--notes-fold-size);
-  height: var(--notes-fold-height);
-  line-height: 0;
-}
-main:not(.ls-fold-button-on-right) #main-content-container .notes-catalog-fold svg {
-  display: block;
-  margin-left: 0 !important;
-}

@@ -7,8 +7,8 @@
     width: 100%;
   }
   html:not(.is-native-android):not(.is-native-ios):not(.is-native-iphone):not(.is-native-iphone-without-notch):not(.is-native-ipad) #main-content-container:not([data-is-margin-less-pages="true"]) {
-    /* Match the right header icons: one 16px inset, not two stacked gutters. */
-    padding-inline: 0;
+    /* 8px outer field plus the 16px content gutter leaves room to center folds. */
+    padding-inline: 8px;
     --notes-page-text-inset: 16px;
     --notes-block-edge-inset: 9px;
     --notes-fold-size: 14px;
@@ -229,4 +229,41 @@ main.ls-fold-button-on-right #main-content-container .page-blocks-inner:not(.ref
 main.ls-fold-button-on-right #main-content-container #journals .foldable-title:has(.journal-title),
 main.ls-fold-button-on-right #main-content-container #journals .journal.page > :not(:first-child):not(.references):not(:has(.references)) {
   margin-right: var(--notes-page-text-inset);
+}
+
+/* Ordinary blocks and catalog hosts share Logseq's 22px control slot.
+   Align the glyph at its inner edge, preserving bullet/text positions and
+   native visibility classes. Nested blocks inherit the same local geometry. */
+main:not(.ls-fold-button-on-right) #main-content-container .block-control-wrap > .block-control {
+  box-sizing: border-box;
+  flex: 0 0 22px;
+  width: 22px;
+  min-width: 22px;
+  height: var(--notes-fold-height);
+  padding: 0;
+}
+main:not(.ls-fold-button-on-right) #main-content-container .block-control-wrap > .block-control .rotating-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 22px;
+  height: var(--notes-fold-height);
+  line-height: 0;
+}
+#main-content-container :is(.block-control, .page-blocks-collapse-control) svg {
+  display: block;
+  margin-left: 0 !important;
+}
+
+/* Heading rows start at the content edge; native block rows start 7px before
+   it. Their 22px control slot puts the glyph 3px left of a heading's 16px slot.
+   Use that same center for both, inside the desktop outer field. */
+@media (min-width: 641px) {
+  html:not(.is-native-android):not(.is-native-ios):not(.is-native-iphone):not(.is-native-iphone-without-notch):not(.is-native-ipad) main:not(.ls-fold-button-on-right) #main-content-container :is(.foldable-title .block-control, .page-blocks-collapse-control) .rotating-arrow {
+    position: relative;
+    left: -3px;
+  }
+  html:not(.is-native-android):not(.is-native-ios):not(.is-native-iphone):not(.is-native-iphone-without-notch):not(.is-native-ipad) #head > .r {
+    padding-right: 16px;
+  }
 }
