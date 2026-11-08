@@ -47,6 +47,8 @@ Device type is independent of window width. Reload after changing config.
   earlier parents move into a popup.
 - Subpages appears below the page title, before properties and content. It starts
   expanded; fold choices persist per graph and page on this device.
+- Subpages shows aliases in parentheses after each name, separated by commas.
+  Search matches names and aliases, including queries combining both.
 - Subpages, Tagged pages and Linked References have search and saved fold states.
   Subpages and Tagged pages match names and aliases; Linked References matches
   rendered text. `+` beside Subpages creates a child using only its name and

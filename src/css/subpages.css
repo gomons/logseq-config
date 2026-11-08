@@ -80,3 +80,11 @@
   flex: 0 1 auto !important;
   width: auto;
 }
+
+/* Alias captions belong to the same destination and wrap on narrow screens. */
+.page-hierarchy .notes-navigation-link {
+  overflow-wrap: anywhere;
+}
+.notes-subpage-aliases {
+  color: var(--ls-secondary-text-color);
+}

@@ -164,6 +164,11 @@ const type = (input, text) => {
   const native = document.querySelector(
     ".page-hierarchy .notes-page-list-filter",
   );
+  const subpage = document.querySelector(".page-hierarchy .notes-navigation-link");
+  assert.equal(subpage.textContent, "Books (Reading List, Книги)");
+  assert.equal(subpage.getAttribute("href"), "#/page/root%2Fbooks");
+  type(native, "books КНИГИ");
+  assert(!subpage.parentElement.classList.contains("notes-page-filter-hidden"));
   type(native, "reading");
   const row = document.querySelector(".notes-navigation-row");
   assert(!row.classList.contains("notes-page-filter-hidden"));
@@ -180,11 +185,28 @@ const type = (input, text) => {
   input = document.querySelector('[aria-label="Search all pages"]');
   type(input, "library");
   assert.equal(document.querySelectorAll(".notes-search-alias").length, 0);
+  assert.equal(subpage.textContent, "Books (Library)");
+  type(native, "reading");
+  assert(row.classList.contains("notes-page-filter-hidden"));
+  type(native, "library");
+  assert(!row.classList.contains("notes-page-filter-hidden"));
+  aliases = ["Books", "Library", "library", "<b>Example</b>"];
+  await poll();
+  await new Promise((r) => setTimeout(r, 200));
+  flush();
+  assert.equal(subpage.textContent, "Books (Library, <b>Example</b>)");
+  assert.equal(subpage.querySelector("b"), null);
+  aliases = [];
+  await poll();
+  await new Promise((r) => setTimeout(r, 200));
+  flush();
+  assert.equal(subpage.textContent, "Books");
+  assert.equal(subpage.querySelector(".notes-subpage-aliases"), null);
   window.notesContentsSearch.abort();
   window.notesPageNavigation.abort();
   window.notesAutomaticContents.abort();
   console.log(
-    "Alias search passed: Contents/Subpages, actual destination, case/Cyrillic, no alias captions, no-match/clear, live updates.",
+    "Alias search passed: Contents/Subpages, actual destination, case/Cyrillic, Subpage captions, mixed terms, deduplication, escaping, no-match/clear, live updates.",
   );
 })().catch((e) => {
   console.error(e);

@@ -96,7 +96,26 @@
       link.className = "notes-navigation-link";
       row.append(link);
     }
-    setText(link, label);
+    const seen = new Set([normalize(label), normalize(target)]);
+    const aliases = (window.notesAliasesForReference?.(ref) || []).filter((value) => {
+      const key = normalize(value.trim());
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).map((value) => value.trim());
+    const caption = aliases.length ? ` (${aliases.join(", ")})` : "";
+    const signature = JSON.stringify([label, caption]);
+    if (link.dataset.caption !== signature) {
+      setText(link, label);
+      if (caption) {
+        const detail = document.createElement("span");
+        detail.className = "notes-subpage-aliases";
+        detail.textContent = caption;
+        link.append(detail);
+      }
+      link.dataset.caption = signature;
+    }
+    link.dataset.searchText = [label, ...aliases].join(" ");
     const href = "#/page/" + encodeURIComponent(target);
     if (link.getAttribute("href") !== href) link.setAttribute("href", href);
     link.title = target;
