@@ -7,7 +7,12 @@
     width: 100%;
   }
   html:not(.is-native-android):not(.is-native-ios):not(.is-native-iphone):not(.is-native-iphone-without-notch):not(.is-native-ipad) #main-content-container:not([data-is-margin-less-pages="true"]) {
-    padding-inline: 24px;
+    /* Match the right header icons: one 16px inset, not two stacked gutters. */
+    padding-inline: 0;
+    --notes-page-text-inset: 16px;
+    --notes-block-edge-inset: 9px;
+    --notes-fold-size: 14px;
+    --notes-fold-gap: 2px;
   }
 }
 
