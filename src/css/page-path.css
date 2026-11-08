@@ -48,8 +48,6 @@
   max-width: 100%;
   overflow-wrap: anywhere;
   color: var(--ls-secondary-text-color);
-}
-.notes-header-path-segment {
   cursor: pointer;
   text-underline-offset: .18em;
 }
@@ -132,36 +130,9 @@
   box-sizing: border-box;
 }
 
-/* Align page navigation with top-level block text; bullets keep their gutter. */
-#main-content-container .page {
-  --notes-page-text-inset: 24px;
-}
-html:is(.is-native-android, .is-native-ios, .is-native-iphone, .is-native-iphone-without-notch, .is-native-ipad) #main-content-container .page {
-  --notes-page-text-inset: 37px;
-}
-#main-content-container .page :has(> .ls-page-title) {
-  padding-left: var(--notes-page-text-inset);
-  box-sizing: border-box;
-}
-#main-content-container .page .ls-page-title {
-  margin-left: 0;
-  margin-right: 0;
-  padding-left: 0 !important;
-  padding-right: 0;
-}
-
 /* Keep the namespace path visually attached to its page heading. */
 #main-content-container .notes-header-path {
   margin-bottom: 0.25rem;
-}
-
-/* Focused blocks use the same text gutter as ordinary page headings. */
-#main-content-container .notes-block-path {
-  padding-left: var(--notes-page-text-inset, 24px);
-  box-sizing: border-box;
-}
-html:is(.is-native-android, .is-native-ios, .is-native-iphone, .is-native-iphone-without-notch, .is-native-ipad) #main-content-container .notes-block-path {
-  padding-left: var(--notes-page-text-inset, 37px);
 }
 
 /* Native block-parent links also navigate, including links without href. */
@@ -207,39 +178,4 @@ html:is(.is-native-android, .is-native-ios, .is-native-iphone, .is-native-iphone
 #main-content-container .notes-block-path > :not(a):not(.notes-block-page-path) {
   margin-left: 0;
   margin-right: 0;
-}
-
-/* Journals share the page text gutter; their native blocks already use it. */
-#main-content-container #journals .journal.page .journal-title {
-  display: block;
-  margin-left: var(--notes-page-text-inset, 24px);
-  margin-right: 8px;
-}
-#main-content-container #journals .journal.page > :not(:first-child):not(.references):not(:has(.references)) {
-  margin-left: var(--notes-page-text-inset, 24px);
-  margin-right: 8px;
-  min-width: 0;
-  box-sizing: border-box;
-}
-#main-content-container #journals {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-/* Local experiment: include the top-level bullet in the content's left edge. */
-#main-content-container .page-blocks-inner:not(.references .page-blocks-inner, .custom-query .page-blocks-inner) {
-  padding-left: 17px;
-  box-sizing: border-box;
-}
-
-/* Local experiment: use equal gutters on both sides of the page. */
-#main-content-container .page :has(> .ls-page-title) {
-  padding-right: var(--notes-page-text-inset, 24px);
-}
-#main-content-container .page .references.page-linked {
-  margin-right: var(--notes-page-text-inset, 24px);
-}
-#main-content-container .page-blocks-inner:not(.references .page-blocks-inner, .custom-query .page-blocks-inner) {
-  padding-right: 17px;
 }

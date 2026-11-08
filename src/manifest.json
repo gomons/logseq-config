@@ -24,6 +24,7 @@
   "logseq/custom.css": [
     "src/css/navigation.css",
     "src/css/page-path.css",
+    "src/css/layout.css",
     "src/css/read-only.css",
     "src/css/subtree-search.css",
     "src/css/contents.css",
