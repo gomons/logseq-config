@@ -152,9 +152,22 @@
     }
     window.notesUpdateParentPath?.();
   };
+  let toolbarInset = 0;
   const render = () => {
     if (signal.aborted) return;
     renderToolbar(document.querySelector("#head"));
+    const mobile = window.matchMedia?.("(max-width: 640px)").matches ||
+      /is-native-(android|ios|iphone|ipad)/.test(document.documentElement.className);
+    const anchor = document.querySelector("#main-content-container .notes-header-path, #main-content-container .notes-block-path, #main-content-container .ls-page-title");
+    const left = anchor?.getBoundingClientRect?.().left;
+    const actual = toolbarIcons?.getBoundingClientRect?.().left;
+    if (!mobile && Number.isFinite(left) && Number.isFinite(actual)) {
+      const next = Math.round(toolbarInset + left - actual);
+      if (next !== toolbarInset) {
+        toolbarInset = next;
+        toolbarIcons.style.setProperty("--notes-toolbar-align-inset", `${next}px`);
+      }
+    }
   };
   const observer = new MutationObserver((changes) => {
     if (changes.some(({ target, addedNodes, removedNodes }) => {

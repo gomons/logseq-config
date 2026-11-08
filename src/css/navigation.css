@@ -3,7 +3,8 @@
   display: none !important;
 }
 
-/* Keep navigation after page content: Subpages, Tagged pages, Linked References. */
+/* Tagged pages and Linked References stay after page content.
+   Subpages is placed immediately after the page title by navigation.js. */
 div.flex-1.page.relative {
   display: flex;
   flex-direction: column;
@@ -64,3 +65,69 @@ div.flex-1.page.relative > :is(
 
 /* Preserve native reference nodes and fold state while excluding indirect hits. */
 .notes-indirect-reference { display: none !important; }
+
+/* Fold affordances follow input capability, independently of screen width. */
+@media (hover: hover) and (pointer: fine) {
+  :is(.page-hierarchy, .references.page-tags, .references.page-linked) .foldable-title .block-control {
+    opacity: 0;
+  }
+  :is(.page-hierarchy, .references.page-tags, .references.page-linked) .foldable-title:is(:hover, :focus-within) .block-control {
+    opacity: .4;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  :is(.page-hierarchy, .references.page-tags, .references.page-linked) .foldable-title .block-control {
+    opacity: .4;
+  }
+}
+
+/* Match the text gutter shared by the page title and Subpages. */
+#main-content-container .page .references.page-linked {
+  margin-right: 8px;
+  margin-left: var(--notes-page-text-inset, 24px);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Section controls share the block bullet gutter and native arrow canvas. */
+#main-content-container :is(.page-hierarchy, .references.page-tags, .references.page-linked) .foldable-title {
+  position: relative;
+}
+#main-content-container :is(.page-hierarchy, .references.page-tags, .references.page-linked) .foldable-title .block-control {
+  position: absolute;
+  left: -22px;
+  right: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  min-width: 16px;
+  height: 24px;
+  padding: 0;
+}
+#main-content-container :is(.block-control, .page-blocks-collapse-control) svg {
+  width: 14px;
+  height: 14px;
+}
+/* Respect Logseq's right-side fold controls on mobile. */
+main.ls-fold-button-on-right #main-content-container :is(.page-hierarchy, .references.page-tags, .references.page-linked) .foldable-title {
+  padding-right: 28px;
+}
+main.ls-fold-button-on-right #main-content-container :is(.page-hierarchy, .references.page-tags, .references.page-linked) .foldable-title .block-control {
+  left: auto;
+  right: 0;
+  width: 22px;
+  min-width: 22px;
+}
+main.ls-fold-button-on-right #main-content-container .ls-block .block-control {
+  right: 0;
+  width: 22px;
+  min-width: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+}

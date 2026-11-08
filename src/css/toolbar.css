@@ -281,3 +281,20 @@ html #head .notes-toolbar-navigation .button:is(:disabled, [aria-disabled="true"
   opacity: .35;
   cursor: default;
 }
+
+/* Follow the page text gutter on desktop; center on phones. */
+@media (min-width: 641px) {
+  #head > .notes-toolbar-navigation {
+    margin-left: var(--notes-toolbar-align-inset, 0px);
+  }
+}
+@media (max-width: 640px) {
+  #head > .notes-toolbar-navigation {
+    margin-left: 0;
+    justify-self: center;
+  }
+}
+html:is(.is-native-android, .is-native-ios, .is-native-iphone, .is-native-ipad) #head > .notes-toolbar-navigation {
+  margin-left: 0;
+  justify-self: center;
+}

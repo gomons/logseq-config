@@ -45,6 +45,8 @@ Device type is independent of window width. Reload after changing config.
 - Page headings show
   leaf names; each segment of the parent path is clickable. On narrow screens,
   earlier parents move into a popup.
+- Subpages appears below the page title, before properties and content. It starts
+  expanded; fold choices persist per graph and page on this device.
 - Subpages, Tagged pages and Linked References have search and saved fold states.
   Subpages and Tagged pages match names and aliases; Linked References matches
   rendered text. `+` beside Subpages creates a child using only its name and

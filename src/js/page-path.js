@@ -42,6 +42,7 @@
   };
   const createPathLink = (parts, names, index) => {
     const link = document.createElement("a");
+    link.className = "notes-header-path-segment";
     link.textContent = names[index];
     link.href = "#/page/" + encodeURIComponent(parts.slice(0, index + 1).join("/"));
     link.title = names.slice(0, index + 1).join(" / ");
@@ -82,7 +83,7 @@
     const source = document.querySelector("#main-content-container .ls-page-title .title[data-ref]");
     const path = source?.getAttribute("data-ref") || "";
     const old = document.querySelector(".notes-header-path");
-    if (!toolbar || !path.includes("/")) {
+    if (!toolbar || !path) {
       old?.remove();
       return;
     }
@@ -90,8 +91,8 @@
     const signature = JSON.stringify([path, label]);
     if (old?.dataset.signature === signature && old.nextElementSibling === toolbar) return;
     old?.remove();
-    const parts = path.split("/").slice(0, -1);
-    const labels = label.split("/").slice(0, -1);
+    const parts = path.split("/");
+    const labels = label.split("/");
     const names = labels.length === parts.length ? labels : parts;
     const breadcrumb = document.createElement("nav");
     breadcrumb.className = "notes-header-path";
@@ -106,7 +107,8 @@
       }
       const link = createPathLink(parts, names, index);
       link.className = "notes-header-path-segment";
-      if (index === parts.length - 1) link.classList.add("notes-header-path-parent");
+      if (index === parts.length - 1) link.setAttribute("aria-current", "page");
+      else if (index === parts.length - 2) link.classList.add("notes-header-path-parent");
       breadcrumb.append(link);
     });
     toolbar.before(breadcrumb);

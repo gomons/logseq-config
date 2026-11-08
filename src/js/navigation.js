@@ -244,6 +244,7 @@
     const heading = panel.querySelector(".foldable-title h2");
     setText(heading, `${count} ${name}`);
     panel.classList.toggle("notes-navigation-empty", false);
+    panel.classList.toggle("notes-subpages-empty", hierarchy && count === 0);
     filterRows(panel);
   };
 
@@ -280,7 +281,14 @@
         }
       }
       for (const panel of pendingPanels) {
-        if (panel.isConnected) updatePanel(panel);
+        if (!panel.isConnected) continue;
+        updatePanel(panel);
+        if (panel.matches(".page-hierarchy")) {
+          const title = panel.closest(".page")?.querySelector(".ls-page-title");
+          // Keep the native panel and its handlers; only change its placement.
+          if (title && title.nextElementSibling !== panel)
+            title.after(panel);
+        }
       }
     } finally {
       pendingPanels.clear();

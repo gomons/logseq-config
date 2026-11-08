@@ -52,11 +52,13 @@
       watched.get(content)?.observer.disconnect();
       const collapsed = () => content.classList.contains("hidden");
       // Restore through Logseq's handler, so its internal state stays consistent.
-      if (typeof saved[key] === "boolean" && saved[key] !== collapsed()) {
+      const desired = typeof saved[key] === "boolean" ? saved[key]
+        : kind === "hierarchy" ? false : collapsed();
+      if (desired !== collapsed()) {
         if (control) control.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
         else {
-          content.classList.toggle("hidden", saved[key]);
-          content.classList.toggle("initial", !saved[key]);
+          content.classList.toggle("hidden", desired);
+          content.classList.toggle("initial", !desired);
         }
       }
       if (mobileTags) title.setAttribute("aria-expanded", String(!collapsed()));

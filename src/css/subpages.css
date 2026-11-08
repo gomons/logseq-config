@@ -47,3 +47,24 @@
 [data-notes-synthetic] ul:empty,
 [data-notes-synthetic] .notes-page-list-filter { display: none; }
 
+
+/* The native heading wrapper is a flex row. Give Subpages its own full-width
+   row so folding never changes the title's available width or height. */
+:has(> .ls-page-title + .page-hierarchy) {
+  flex-wrap: wrap;
+}
+.ls-page-title + .page-hierarchy {
+  padding-right: 8px;
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Count real eligible children, independently of the current search query. */
+.page-hierarchy.notes-subpages-empty .notes-page-list-filter,
+.page-hierarchy.notes-subpages-empty .notes-navigation-list {
+  display: none;
+}

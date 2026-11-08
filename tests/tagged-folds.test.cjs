@@ -41,7 +41,7 @@ const folds = fs.readFileSync("src/js/folds.js", "utf8");
 vm.runInNewContext(nav, context);
 vm.runInNewContext(folds, context);
 while (frames.length) frames.shift()();
-const title = document.querySelector(".foldable-title");
+const title = document.querySelector(".page-tags .foldable-title");
 const content = title.parentElement.nextElementSibling;
 const click = (target) =>
   target.dispatchEvent(
