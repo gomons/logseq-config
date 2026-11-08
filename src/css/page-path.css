@@ -136,7 +136,7 @@
 #main-content-container .page {
   --notes-page-text-inset: 24px;
 }
-html:is(.is-native-android, .is-native-ios) #main-content-container .page {
+html:is(.is-native-android, .is-native-ios, .is-native-iphone, .is-native-iphone-without-notch, .is-native-ipad) #main-content-container .page {
   --notes-page-text-inset: 37px;
 }
 #main-content-container .page :has(> .ls-page-title) {
@@ -160,7 +160,7 @@ html:is(.is-native-android, .is-native-ios) #main-content-container .page {
   padding-left: var(--notes-page-text-inset, 24px);
   box-sizing: border-box;
 }
-html:is(.is-native-android, .is-native-ios) #main-content-container .notes-block-path {
+html:is(.is-native-android, .is-native-ios, .is-native-iphone, .is-native-iphone-without-notch, .is-native-ipad) #main-content-container .notes-block-path {
   padding-left: var(--notes-page-text-inset, 37px);
 }
 
