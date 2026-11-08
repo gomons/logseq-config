@@ -56,6 +56,9 @@ Device type is independent of window width. Reload after changing config.
 - Linked References excludes references to namespace descendants, while keeping exact
   page links, hashtags and indexed property values (including aliases). Context under
   direct references is preserved; native source filters and search remain available.
+  Linked Reference and query result blocks always prevent text and property editing,
+  regardless of the source or displayed page’s reading mode. TODO task statuses
+  and CHECK checkboxes remain interactive.
 - Ordinary block arrows clear stale reference-editor context after editing ends,
   preventing Logseq 0.10.x from ignoring folds. Reference/result folds keep their native behavior.
 - Block search includes folded descendants, opens paths to matches and restores

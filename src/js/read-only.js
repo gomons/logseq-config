@@ -132,14 +132,16 @@
       event.target instanceof Element
         ? event.target
         : event.target.parentElement;
+    const reference = target?.closest(".references.page-linked, .custom-query");
+    const referenceContent = reference && target.closest(".ls-block");
     const page = target?.closest("[data-notes-read-only]");
-    if (page?.dataset.notesReadOnly !== "true") return;
+    if (!referenceContent && page?.dataset.notesReadOnly !== "true") return;
     // Explicit table editing overrides page and ancestor text locks.
     // The editor handles its own events and validates opt-in again before saving.
-    if (target.closest(".notes-table-editor")) return;
+    if (!referenceContent && target.closest(".notes-table-editor")) return;
     // Viewing controls must never permit content changes or block dragging.
     if (["beforeinput", "paste", "cut", "drop", "dragstart"].includes(event.type)) {
-      if (editableSearch(target)) return;
+      if (!referenceContent && editableSearch(target)) return;
       event.stopImmediatePropagation();
       event.preventDefault();
       return;
@@ -153,8 +155,12 @@
       clearBlockSelection();
     // Reading mode locks text editing but keeps checklists and task statuses interactive.
     if (event.type !== "contextmenu" && event.type !== "dblclick" && (
-      target.closest('input[type="checkbox"], .task-status, .marker-switch') ||
-      safeControl(target)
+      referenceContent
+        ? (target.closest('input[type="checkbox"], .task-status, .marker-switch') &&
+            !target.closest(".block-properties, .page-properties, .notes-property-toggle")) ||
+          target.closest(".block-control, .bullet-link-wrap, .block-children-left-border, .open-block-ref-link, .block-ref-wrap, .breadcrumb.block-parents a, a[href], .page-ref, .tag, summary, audio[controls], video[controls]") &&
+          !target.closest(".notes-property-toggle, .notes-tag-action")
+        : target.closest('input[type="checkbox"], .task-status, .marker-switch') || safeControl(target)
     ))
       return;
     // These must keep their default action: dragging selects text; mouseup retains it.
@@ -174,7 +180,7 @@
       return;
     }
     if (event.type === "keydown") {
-      if (editableSearch(target)) return;
+      if (!referenceContent && editableSearch(target)) return;
       const copy =
         (event.ctrlKey || event.metaKey) &&
         ["c", "a"].includes(event.key.toLowerCase());

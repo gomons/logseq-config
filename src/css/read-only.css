@@ -8,7 +8,9 @@
 }
 
 /* Reading mode keeps text selectable and native properties visible. */
-.notes-read-only .block-content {
+.notes-read-only .block-content,
+.references.page-linked .block-content,
+.custom-query .block-content {
   -webkit-user-select: text;
   user-select: text;
 }

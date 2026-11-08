@@ -73,6 +73,27 @@ const update = async () => {
     !fire(block("child").querySelector(".notes-tag-input"), "beforeinput"),
   );
   assert(!fire(block("child").querySelector(".notes-tag-input"), "paste"));
+  const refs = document.createElement("div");
+  for (const panelClass of ["references page-linked", "custom-query"]) {
+  refs.className = panelClass;
+  refs.innerHTML = '<input type="search"><div class="ls-block" data-notes-read-only="false"><div class="block-content">Reference</div><input type="checkbox"><button class="notes-property-toggle">Toggle</button><input class="notes-tag-input"><a href="#/page/test">Source</a><a class="block-control">Fold</a><div class="notes-table-editor"><textarea></textarea></div></div>';
+  document.body.append(refs);
+  for (const selector of [".block-content", ".notes-property-toggle", ".notes-tag-input", "textarea"]) {
+    assert(fire(refs.querySelector(selector), "click"), selector);
+    for (const type of ["beforeinput", "paste", "cut", "drop", "dragstart"])
+      assert(fire(refs.querySelector(selector), type), selector + type);
+  }
+  assert(!fire(refs.querySelector("a[href]"), "click"));
+  assert(!fire(refs.querySelector(".block-control"), "click"));
+  assert(!fire(refs.querySelector('input[type="search"]'), "beforeinput"));
+  assert(!fire(refs.querySelector('input[type="checkbox"]'), "click"));
+  const task = document.createElement("span");
+  task.className = "task-status";
+  refs.querySelector(".ls-block").append(task);
+  assert(!fire(task, "click"));
+  assert(fire(task, "beforeinput"));
+  refs.remove();
+  }
   childValue = false;
   await update();
   assert(!fire(block("child").querySelector(".block-content"), "click"));
