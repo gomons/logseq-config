@@ -65,11 +65,11 @@
       for (const type of ["pointerdown", "mousedown", "touchstart", "click", "dblclick"])
         toolbarIcons.addEventListener(type, (event) => event.stopPropagation(), { signal });
       for (const [label, drawing] of [
-        ["Home", '<path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/>'],
         ["Go back", '<path d="m12 5-7 7 7 7M5 12h16"/>'],
         ["Go forward", '<path d="m12 5 7 7-7 7M19 12H3"/>'],
-        ["New page", '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 11v6M9 14h6"/>'],
+        ["Home", '<path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/>'],
         ["Global search", '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>'],
+        ["New page", '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 11v6M9 14h6"/>'],
       ]) {
         const button = document.createElement("button");
         button.type = "button"; button.className = "button icon";
@@ -125,7 +125,7 @@
     if (toolbarIcons.querySelector('[aria-label="Home"]')?.nextElementSibling !== contentsLink) toolbarIcons.querySelector('[aria-label="Home"]').after(contentsLink);
     toolbarIcons.setAttribute("role", "group");
     toolbarIcons.setAttribute("aria-label", "Page tools");
-    const title = document.querySelector("#main-content-container .ls-page-title");
+    const title = document.querySelector("#main-content-container .ls-page-title, #main-content-container .journal-title");
     const pageName = title?.getAttribute("data-ref") ||
       title?.querySelector("[data-ref]")?.getAttribute("data-ref") || "";
     const homeButton = toolbarIcons.querySelector('[aria-label="Home"]');
@@ -158,7 +158,7 @@
     renderToolbar(document.querySelector("#head"));
     const mobile = window.matchMedia?.("(max-width: 640px)").matches ||
       /is-native-(android|ios|iphone|ipad)/.test(document.documentElement.className);
-    const anchor = document.querySelector("#main-content-container .notes-header-path, #main-content-container .notes-block-path, #main-content-container .ls-page-title");
+    const anchor = document.querySelector("#main-content-container .notes-header-path, #main-content-container .notes-block-path, #main-content-container .ls-page-title, #main-content-container .journal-title");
     const left = anchor?.getBoundingClientRect?.().left;
     const actual = toolbarIcons?.getBoundingClientRect?.().left;
     if (!mobile && Number.isFinite(left) && Number.isFinite(actual)) {

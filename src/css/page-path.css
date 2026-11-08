@@ -208,3 +208,21 @@ html:is(.is-native-android, .is-native-ios) #main-content-container .notes-block
   margin-left: 0;
   margin-right: 0;
 }
+
+/* Journals share the page text gutter; their native blocks already use it. */
+#main-content-container #journals .journal.page .journal-title {
+  display: block;
+  margin-left: var(--notes-page-text-inset, 24px);
+  margin-right: 8px;
+}
+#main-content-container #journals .journal.page > :not(:first-child):not(.references):not(:has(.references)) {
+  margin-left: var(--notes-page-text-inset, 24px);
+  margin-right: 8px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+#main-content-container #journals {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
