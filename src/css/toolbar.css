@@ -264,3 +264,20 @@
 }
 /* Links and buttons use the same icon color on mobile themes as well. */
 #head .notes-toolbar-navigation .button svg { color: inherit; stroke: currentColor; }
+
+/* Touch WebViews retain :hover after a tap. Override native header hover rules,
+   including their higher-specificity dark-theme opacity, even after disabling. */
+@media (hover: none), (pointer: coarse) {
+  html #head .notes-toolbar-navigation .button:is(:hover, :focus, :active) {
+    color: var(--lx-gray-11, var(--ls-secondary-text-color));
+    opacity: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html #head .notes-toolbar-navigation .button:is([aria-current="page"], [aria-pressed="true"]) {
+    color: var(--ls-link-text-color);
+  }
+}
+html #head .notes-toolbar-navigation .button:is(:disabled, [aria-disabled="true"]) {
+  opacity: .35;
+  cursor: default;
+}
