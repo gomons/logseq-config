@@ -179,3 +179,51 @@
   margin-left: 0;
   margin-right: 0;
 }
+
+/* The native h1 has its own margins in addition to the title wrapper. Keep
+   vertical spacing on the wrapper, and do not reserve a gap for an empty icon. */
+#main-content-container .ls-page-title {
+  padding-block: 0;
+}
+#main-content-container .ls-page-title > h1.page-title {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  line-height: 1.2;
+}
+#main-content-container .ls-page-title > h1.page-title > .page-icon:empty {
+  display: none;
+}
+#main-content-container .ls-page-title .page-title-sizer-wrapper {
+  min-width: 0;
+}
+
+/* One grid owns the left edge of breadcrumbs, title and Subpages. Native
+   title actions occupy a separate column and cannot indent the heading. */
+#main-content-container .page :has(> .ls-page-title) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0;
+}
+#main-content-container .page :has(> .ls-page-title) > .notes-header-path {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+#main-content-container .page :has(> .ls-page-title) > .ls-page-title {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  width: 100%;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+#main-content-container .page :has(> .ls-page-title) > .page-hierarchy {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+#main-content-container .page :has(> .ls-page-title) > :has(> .page-blocks-collapse-control) {
+  grid-column: 2;
+  grid-row: 2;
+}

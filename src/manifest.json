@@ -34,7 +34,8 @@
     "src/css/checklists.css",
     "src/css/list-properties.css",
     "src/css/subpages.css",
-    "src/css/table-editor.css"
+    "src/css/table-editor.css",
+    "src/css/flashcards.css"
   ],
   "logseq/config.edn": [
     "src/config/default.edn",
