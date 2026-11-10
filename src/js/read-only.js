@@ -102,6 +102,13 @@
                 !page.matches(".journal-item, .sidebar-item")) continue;
             paint(block, info.blockLocks.get(block.getAttribute("blockid")) || false);
           }
+          // Use Logseq's own Escape lifecycle to leave the editor. Do this
+          // after resolving block overrides: a writable child may stay open.
+          const editing = await api().check_editing?.();
+          if (!signal.aborted && page.isConnected && states.get(page) === state &&
+              editing && info.blockLocks.get(String(editing)) === true) {
+            api().exit_editing_mode?.(false);
+          }
         }
       } catch (error) {
         console.warn("Reading mode:", error);

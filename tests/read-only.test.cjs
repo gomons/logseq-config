@@ -5,6 +5,7 @@ const { parseHTML } = require("linkedom");
 const { window, document } = parseHTML(
   '<html><body><div class="page"><div class="ls-page-title"><h1><span data-ref="test">Test</span></h1></div><div class="ls-block" blockid="parent"><div class="block-content">Parent</div></div><div class="ls-block" blockid="child"><div class="block-content">Child</div><input type="checkbox"><button class="notes-tag-action">+</button><input class="notes-tag-input" type="text"><a href="#/page/test">Link</a></div><div class="ls-block" blockid="sibling"><div class="block-content">Sibling</div></div></div></body></html>',
 );
+let editing = "child", exits = 0;
 let pageProps = {},
   rootValue = true,
   childValue = true,
@@ -22,6 +23,8 @@ const tree = () => [
 ];
 window.logseq = {
   api: {
+    check_editing: () => editing,
+    exit_editing_mode: (select) => { assert.equal(select, false); exits++; editing = false; },
     get_page: async () => ({ name: "test", properties: pageProps }),
     get_page_blocks_tree: async () => tree(),
     get_block: async () => ({ page: { id: 123 } }),
@@ -58,6 +61,11 @@ const update = async () => {
 };
 (async () => {
   await tick();
+  assert.equal(exits, 1, "Exit the active editor when its block becomes read-only");
+  editing = "sibling";
+  await update();
+  assert.equal(exits, 1, "Keep an unlocked sibling editor open");
+  editing = false;
   assert(
     !document.querySelector(".page").classList.contains("notes-read-only"),
   );
