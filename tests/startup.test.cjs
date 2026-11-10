@@ -56,8 +56,8 @@ const path = document.querySelector(".notes-header-path");
 assert(path.nextElementSibling.matches(".ls-page-title"));
 assert(!document.querySelector("#head .notes-header-path"));
 assert.equal(path.querySelector("a").textContent, "Leisure");
-assert.equal(path.querySelectorAll(":scope > a").length, 2);
-assert(path.querySelector("[aria-current=page]"));
+assert.equal(path.querySelectorAll(":scope > a").length, 1);
+assert(!path.querySelector("[aria-current=page]"));
 assert.equal(
   document.querySelector(".notes-contents-shortcut").previousElementSibling.getAttribute("aria-label"),
   "Home",
@@ -67,12 +67,12 @@ source.setAttribute("data-ref", "contents");
 source.textContent = "Contents";
 for (const fn of timers) fn();
 assert.equal(document.querySelector(".notes-contents-shortcut").hidden, false);
-assert(document.querySelector(".notes-header-path [aria-current=page]"));
+assert.equal(document.querySelector(".notes-header-path").style.visibility, "hidden");
 source.setAttribute("data-ref", "shopping");
 source.textContent = "Shopping";
 for (const fn of timers) fn();
 assert.equal(document.querySelector(".notes-contents-shortcut").hidden, false);
-assert(document.querySelector(".notes-header-path [aria-current=page]"));
+assert.equal(document.querySelector(".notes-header-path").style.visibility, "hidden");
 source.setAttribute("data-ref", "leisure/games/diablo");
 source.textContent = "Leisure/Games/Diablo";
 document.querySelector("#head").getBoundingClientRect = () => ({

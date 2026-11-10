@@ -100,23 +100,34 @@
     breadcrumb.setAttribute("aria-label", "Page path");
     if (parts.length > 1)
       breadcrumb.append(createPathDisclosure(parts.slice(0, -1), names.slice(0, -1)));
-    parts.forEach((_, index) => {
+    if (parts.length === 1) {
+      breadcrumb.style.visibility = "hidden";
+      breadcrumb.setAttribute("aria-hidden", "true");
+    }
+    parts.slice(0, -1).forEach((_, index) => {
       if (index) {
         const separator = createPathSeparator();
         breadcrumb.append(separator);
       }
       const link = createPathLink(parts, names, index);
       link.className = "notes-header-path-segment";
-      if (index === parts.length - 1) link.setAttribute("aria-current", "page");
-      else if (index === parts.length - 2) link.classList.add("notes-header-path-parent");
+      if (index === parts.length - 2) link.classList.add("notes-header-path-parent");
       breadcrumb.append(link);
     });
+    if (parts.length > 1) breadcrumb.append(createPathSeparator());
     toolbar.before(breadcrumb);
   };
   const updateBlockPaths = () => {
     for (const trail of document.querySelectorAll("#main-content-container .breadcrumb.block-parents")) {
       if (trail.closest(".references, .custom-query")) continue;
       if (!trail.classList.contains("notes-block-path")) trail.classList.add("notes-block-path");
+      if (!trail.querySelector(".notes-block-path-end")) {
+        const end = document.createElement("span");
+        end.className = "notes-block-path-end";
+        end.setAttribute("aria-hidden", "true");
+        end.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
+        trail.append(end);
+      }
       const source = [...trail.querySelectorAll("a")].find(link => !link.closest(".notes-block-page-path"));
       if (!source || source.closest(".notes-block-page-path")) continue;
       const path = source.getAttribute("data-ref") || source.textContent.trim();
@@ -159,7 +170,7 @@
     if (frame !== null) cancelAnimationFrame(frame);
     if (window.notesUpdateParentPath === updateParentPath) delete window.notesUpdateParentPath;
     document.querySelector(".notes-header-path")?.remove();
-    document.querySelectorAll(".notes-block-page-path").forEach(node => node.remove());
+    document.querySelectorAll(".notes-block-page-path, .notes-block-path-end").forEach(node => node.remove());
     document.querySelectorAll(".notes-block-path-source").forEach(node => node.classList.remove("notes-block-path-source"));
     document.querySelectorAll(".notes-block-path").forEach(node => node.classList.remove("notes-block-path"));
     document.querySelectorAll(".notes-namespace-title").forEach((title) => title.remove());

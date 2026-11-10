@@ -227,3 +227,11 @@
   grid-column: 2;
   grid-row: 2;
 }
+
+.notes-block-path-end {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--ls-secondary-text-color);
+}
+.notes-block-path-end svg { display: block; }

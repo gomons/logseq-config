@@ -76,7 +76,7 @@ html:is(.is-native-android, .is-native-ios, .is-native-iphone, .is-native-iphone
 }
 
 /* Match the text gutter shared by the page title and Subpages. */
-#main-content-container .page .references.page-linked {
+#main-content-container .page .references:is(.page-linked, .page-tags) {
   margin-inline: var(--notes-page-text-inset);
   min-width: 0;
   box-sizing: border-box;
