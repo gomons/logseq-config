@@ -102,6 +102,23 @@ const update = async () => {
   assert(fire(task, "beforeinput"));
   refs.remove();
   }
+  const viewQuery = document.createElement("div");
+  viewQuery.className = "custom-query";
+  viewQuery.innerHTML = '<div class="th"></div><div class="ls-block"><div class="block-content">Locked result</div></div>';
+  block("child").append(viewQuery);
+  for (const title of ["Switch to table view", "Switch to list view", "Setting properties"]) {
+    const control = document.createElement("a");
+    control.title = title;
+    control.innerHTML = '<span>Icon</span>';
+    viewQuery.querySelector(".th").append(control);
+    let clicked = false;
+    control.addEventListener("click", () => { clicked = true; });
+    assert(!fire(control.firstElementChild, "click"));
+    assert(clicked, "Native query view handler must receive the click");
+    assert(fire(control, "beforeinput"));
+  }
+  assert(fire(viewQuery.querySelector(".block-content"), "click"));
+  viewQuery.remove();
   childValue = false;
   await update();
   assert(!fire(block("child").querySelector(".block-content"), "click"));

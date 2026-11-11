@@ -160,6 +160,17 @@
       (event.type === "keydown" && event.key === "Escape")
     )
       clearBlockSelection();
+    // Query presentation controls modify the view, not the result blocks.
+    // Restrict the exception to native header controls, even inside a locked host.
+    const queryViewControl = target.closest(
+      '.custom-query > .th a[title="Switch to table view"], ' +
+      '.custom-query > .th a[title="Switch to list view"], ' +
+      '.custom-query > .th a[title="Setting properties"]',
+    );
+    if (queryViewControl && [
+      "pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend",
+      "click", "keydown",
+    ].includes(event.type)) return;
     // Reading mode locks text editing but keeps checklists and task statuses interactive.
     if (event.type !== "contextmenu" && event.type !== "dblclick" && (
       referenceContent
