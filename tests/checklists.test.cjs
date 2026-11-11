@@ -32,6 +32,10 @@ window.logseq = {
     },
   },
 };
+const query = document.createElement("div");
+query.className = "custom-query";
+query.innerHTML = '<div class="query-table"><table><thead><tr><th>page</th><th>block</th></tr></thead><tbody><tr><td>CHECK Page name</td><td><div>CHECK Table task</div></td></tr><tr><td>Page</td><td>CHECKED Finished task</td></tr><tr><td>Page</td><td>CHECKING ordinary text</td></tr></tbody></table></div>';
+document.body.append(query);
 const source = readFileSync("src/js/checklists.js", "utf8");
 runInNewContext(source, {
   window,
@@ -50,7 +54,13 @@ runInNewContext(source, {
 });
 (async () => {
   await new Promise(setImmediate);
-  const boxes = [...document.querySelectorAll(".notes-check-controls input")];
+  const statuses = [...query.querySelectorAll(".notes-check-table-status input")];
+  assert.equal(statuses.length, 2);
+  assert.equal(statuses[0].checked, false);
+  assert.equal(statuses[1].checked, true);
+  assert(statuses.every(box => box.disabled));
+  assert.equal(query.querySelector("td").textContent, "CHECK Page name");
+  const boxes = [...document.querySelectorAll(".ls-block .notes-check-controls input")];
   assert.equal(boxes.length, 2, "Only CHECK and CHECKED become controls");
   assert.equal(boxes[0].checked, false);
   assert.equal(boxes[1].checked, true);

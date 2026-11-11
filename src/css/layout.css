@@ -190,6 +190,10 @@ main.ls-fold-button-on-right #main-content-container .page :has(> .ls-page-title
   flex: 1;
   min-width: 0;
   align-items: center;
+  /* Match the native result row's pr-2 inset instead of reaching the
+     outer query edge. Include padding in the existing full width. */
+  box-sizing: border-box;
+  padding-inline-end: .5rem;
 }
 #main-content-container .custom-query-title .title-text {
   min-width: 0;

@@ -87,6 +87,43 @@
       pending.delete(content);
     }
   };
+  // Query tables expose cell text but no stable block identity. Render status
+  // only here; never update a block by matching potentially duplicate text.
+  const renderTableStatuses = () => {
+    for (const table of document.querySelectorAll(".custom-query .query-table table")) {
+      const headers = [...table.querySelectorAll("thead th")];
+      const index = headers.findIndex(cell => cell.textContent.trim() === "block");
+      if (index < 0) continue;
+      for (const row of table.querySelectorAll("tbody tr")) {
+        const cell = row.children[index];
+        if (!cell || cell.querySelector(".notes-check-controls")) continue;
+        const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+        let text;
+        while ((text = walker.nextNode()) && !text.textContent.trim()) {}
+        const match = text?.textContent.match(prefix);
+        if (!match || text.parentElement.closest("a, pre, code")) continue;
+        const status = match[1].toUpperCase();
+        const control = document.createElement("span");
+        control.className = "notes-check-controls notes-check-table-status";
+        control.setAttribute("role", "img");
+        control.setAttribute("aria-label", status === "CHECKED" ? "Checked" : "Unchecked");
+        control.title = "Checklist status — switch to list view to change";
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.disabled = true;
+        box.checked = status === "CHECKED";
+        box.setAttribute("aria-hidden", "true");
+        control.append(box);
+        const original = text.textContent;
+        text.textContent = original.replace(prefix, "").replace(/^\s/, "");
+        text.before(control);
+        const className = nativeClass[status];
+        const addedClass = !cell.classList.contains(className);
+        cell.classList.add(className);
+        controls.set(control, { text, original, title: cell, className, addedClass });
+      }
+    }
+  };
   const refresh = () => {
     frame = null;
     if (signal.aborted) return;
@@ -105,6 +142,7 @@
         controls.delete(control);
       }
     }
+    renderTableStatuses();
     document.querySelectorAll(".ls-block[blockid] .block-content")
       .forEach((content) => void mount(content));
   };
@@ -115,8 +153,8 @@
     if (changes.some(({ target, addedNodes }) => {
       const element = target.nodeType === 1 ? target : target.parentElement;
       if (element?.closest(".notes-check-controls")) return false;
-      return element?.closest(".ls-block") || [...addedNodes].some((node) =>
-        node.nodeType === 1 && (node.matches(".ls-block") || node.querySelector(".ls-block")));
+      return element?.closest(".ls-block, .query-table") || [...addedNodes].some((node) =>
+        node.nodeType === 1 && (node.matches(".ls-block, .query-table") || node.querySelector(".ls-block, .query-table")));
     })) schedule();
   });
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
