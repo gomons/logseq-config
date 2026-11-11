@@ -267,3 +267,18 @@ main:not(.ls-fold-button-on-right) #main-content-container .block-control-wrap >
     padding-right: 16px;
   }
 }
+
+/* Native hover toggles display:none on the arrow wrapper. In baseline-aligned
+   heading rows this changes the control's baseline and moves the whole row.
+   Keep identical geometry in both states; only visibility may change. */
+#main-content-container .block-control-wrap > .block-control > :is(.control-hide, .control-show) {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+  height: var(--notes-fold-height);
+  line-height: 0;
+}
+#main-content-container .block-control-wrap > .block-control > .control-hide {
+  visibility: hidden;
+  pointer-events: none;
+}
