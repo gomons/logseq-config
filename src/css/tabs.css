@@ -1,0 +1,55 @@
+/* Desktop page tabs wrap within the content column. */
+.notes-desktop-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .25rem .125rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--ls-border-color);
+}
+.notes-desktop-tab {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  border-radius: 6px 6px 0 0;
+  border-bottom: 2px solid transparent;
+  overflow: hidden;
+}
+.notes-desktop-tab:has([aria-current="true"]) {
+  background: var(--ls-secondary-background-color);
+  border-bottom-color: var(--ls-link-text-color);
+}
+.notes-desktop-tab button {
+  padding: .4rem .6rem;
+  color: var(--ls-secondary-text-color);
+  font-size: .9rem;
+  line-height: 1.4;
+}
+.notes-desktop-tab button:first-child {
+  min-width: 0;
+  max-width: 14rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notes-desktop-tab button[aria-current="true"] {
+  color: var(--ls-link-text-color);
+}
+.notes-desktop-tab:hover { background: var(--ls-secondary-background-color); }
+.notes-desktop-tab button:last-child {
+  flex-shrink: 0;
+  padding-inline: .4rem;
+  opacity: .5;
+}
+.notes-desktop-tab button:last-child:hover { opacity: 1; }
+.notes-desktop-tab button:focus-visible {
+  outline: 2px solid var(--ls-link-text-color);
+  outline-offset: -2px;
+}
+.notes-desktop-tab button:disabled { visibility: hidden; }

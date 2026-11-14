@@ -19,7 +19,8 @@
     "src/js/boolean-properties.js",
     "src/js/favorites.js",
     "src/js/list-properties.js",
-    "src/js/table-editor.js"
+    "src/js/table-editor.js",
+    "src/js/tabs.js"
   ],
   "logseq/custom.css": [
     "src/css/navigation.css",
@@ -35,7 +36,8 @@
     "src/css/list-properties.css",
     "src/css/subpages.css",
     "src/css/table-editor.css",
-    "src/css/flashcards.css"
+    "src/css/flashcards.css",
+    "src/css/tabs.css"
   ],
   "logseq/config.edn": [
     "src/config/default.edn",
