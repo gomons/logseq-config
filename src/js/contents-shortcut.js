@@ -32,11 +32,15 @@
   const push = function(state, title, url) {
     const next = cursor + 1;
     const result = originalPush.call(history, { ...(state || {}), [marker]: { session, index: next } }, title, url);
-    cursor = end = next; persist(); render(); return result;
+    cursor = end = next; persist(); render();
+    window.dispatchEvent(new window.Event("notes-route-change"));
+    return result;
   };
   const replace = function(state, title, url) {
     const result = originalReplace.call(history, withMarker(state), title, url);
-    render(); return result;
+    render();
+    window.dispatchEvent(new window.Event("notes-route-change"));
+    return result;
   };
   if (originalPush) history.pushState = push;
   if (originalReplace) history.replaceState = replace;

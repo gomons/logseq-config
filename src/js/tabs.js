@@ -57,7 +57,7 @@
       button.textContent = label(tab.route);
       button.title = tab.route;
       button.setAttribute('aria-current', String(index === active));
-      button.addEventListener('click', () => select(index), { signal });
+      button.addEventListener('click', () => { syncRoute(); select(index); }, { signal });
       const close = document.createElement('button');
       close.textContent = '×';
       close.setAttribute('aria-label', `Close ${label(tab.route)}`);
@@ -176,10 +176,16 @@
       else { tabs.push({ route }); select(tabs.length - 1); }
     }, { capture: true, passive: false, signal });
   }
-  window.addEventListener('hashchange', () => {
-    tabs[active].route = location.hash || '#/';
-    render();
-  }, { signal });
+  const syncRoute = () => {
+    const route = location.hash || '#/';
+    if (tabs[active].route !== route) {
+      tabs[active].route = route;
+      save();
+      render();
+    }
+  };
+  for (const event of ['hashchange', 'popstate', 'notes-route-change'])
+    window.addEventListener(event, syncRoute, { signal });
   const timer = setInterval(() => { const previous = graph; restore(); if (previous !== graph || !bar.isConnected) render(); }, 500);
   signal.addEventListener('abort', () => { clearInterval(timer); cancelDrag(); bar.remove(); });
   restore();
