@@ -15,3 +15,8 @@
   user-select: text;
 }
 
+
+/* Remove the native insertion control and its reserved row in reading mode. */
+.notes-read-only .add-button-link-wrap {
+  display: none;
+}

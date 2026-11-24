@@ -50,3 +50,7 @@ assert.equal(
   declarations('.notes-check-controls,\n.block-content :is(.todo, .done) > input[type="checkbox"]').top,
   "-0.1em",
 );
+
+assert.equal(declarations('.notes-read-only .add-button-link-wrap').display, 'none');
+assert.equal(declarations('#main-content-container .block-control-wrap.bullet-closed > .block-control > .control-hide').visibility, 'visible');
+assert.equal(declarations('#main-content-container .block-control-wrap.bullet-closed > .block-control > .control-hide')['pointer-events'], 'auto');

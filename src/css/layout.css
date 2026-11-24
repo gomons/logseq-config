@@ -282,7 +282,13 @@ main:not(.ls-fold-button-on-right) #main-content-container .block-control-wrap >
   height: var(--notes-fold-height);
   line-height: 0;
 }
-#main-content-container .block-control-wrap > .block-control > .control-hide {
+#main-content-container .block-control-wrap:not(.bullet-closed) > .block-control > .control-hide {
   visibility: hidden;
   pointer-events: none;
+}
+
+/* A folded block must advertise its children before hover or the first tap. */
+#main-content-container .block-control-wrap.bullet-closed > .block-control > .control-hide {
+  visibility: visible;
+  pointer-events: auto;
 }
